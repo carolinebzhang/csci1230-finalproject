@@ -10,9 +10,8 @@ npm install --save three
 # vite
 npm install --save-dev vite
 
-npm install --save three dat.gui (for gui use except i dont have gui yet)
-npm install --save-dev vite
-
+# gui
+npm install three-dat.gui (for gui use except i dont have gui yet)
 
 # to build and run
 To build: 
