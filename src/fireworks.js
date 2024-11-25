@@ -6,7 +6,9 @@ export function createFirework(scene, color, duration) {
   const positions = [];
   const velocities = [];
   const maxSpeed = 50; // max speed of particles
-  const bounds = { x: 200, y: 200, z: 200 }; // max bounds for firework position
+  const bounds = { x: 200, y: 200, z: 200 }; // max bounds for firework position, this needs to be changed based on zoom level, can be
+  // passed in as a parameter later
+  
 
   // randomize the firework position within bounds of page
   const startX = Math.random() * bounds.x - bounds.x / 2;
@@ -37,17 +39,25 @@ export function createFirework(scene, color, duration) {
   // MAKING THE PARTICLES INTO CIRCLES
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const size = 64; 
+  const size = 64;
 
   canvas.width = size;
   canvas.height = size;
 
-  // drawing the circle
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
-  ctx.fillStyle = "white";
-  ctx.fill();
-  ctx.globalAlpha = 1; 
+  const gradient = ctx.createRadialGradient(
+    size / 2,
+    size / 2,
+    size / 4,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+  gradient.addColorStop(0, "white");
+  gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.2)"); // semi-transparent edge
+  gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // fully transparent edge
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
 
   // make texture from canvas
   const texture = new THREE.CanvasTexture(canvas);
@@ -57,12 +67,19 @@ export function createFirework(scene, color, duration) {
     color: color,
     size: 2,
     transparent: true,
-    opacity: 1,
+    opacity: 1, 
     map: texture,
+    blending: THREE.AdditiveBlending, 
+    emissive: color, 
+    emissiveIntensity: 2.5, 
   });
 
   const firework = new THREE.Points(particles, material);
   scene.add(firework);
+
+  const fireworkLight = new THREE.PointLight(color, 100); // testing,, trying to get light on terrain too
+  fireworkLight.position.set(0, 0, 0); // testing
+  scene.add(fireworkLight);
 
   const lifetime = duration;
   let elapsed = 0;
@@ -101,7 +118,8 @@ export function createFirework(scene, color, duration) {
         );
 
         // update opacity -- want fireworks to fade over time, this is also given by speedfactor
-        const opacity = 1 - fadeFactor * (1 - speedFactor);
+        const opacity = 1 - (fadeFactor * (1 - speedFactor) * 2);
+        console.log(opacity);
         material.opacity = opacity;
       }
     },
