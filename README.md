@@ -4,6 +4,8 @@ Final Project for CSCI1230: Computer Graphics
 
 # to install dependencies
 
+install node.js and npm first. 
+
 # three.js
 npm install --save three
 
@@ -11,12 +13,13 @@ npm install --save three
 npm install --save-dev vite
 
 # gui
-npm install three-dat.gui (for gui use except i dont have gui yet)
+npm install three-dat.gui 
 
-# to build and run
-To build: 
-npx vite build
-
-To build/run:
+# to run
 npx vite
+
+# production build
+npx vite build 
+
+
 

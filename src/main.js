@@ -5,6 +5,7 @@ import { OrbitControls } from "../node_modules/three/examples/jsm/controls/Orbit
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
 import { createFirework } from "./fireworks.js";
 import { createTerrain } from "./terrain.js";
+import * as dat from "dat.gui"; 
 
 let scene,
   camera,
@@ -12,6 +13,17 @@ let scene,
   water,
   fireworks = [];
 let clock = new THREE.Clock();
+
+// firework config for GUI controls
+let fireworkConfig = {
+  count: 10,
+  color: "#ff0000", // default is red
+  timing: 3, 
+  launchFireworks: function () {
+    launchFireworks(fireworkConfig);
+    animate();
+  },
+};
 
 function init() {
   console.log("Main.js is running");
@@ -38,7 +50,7 @@ function init() {
   // set up orbit controls
   const controls = new OrbitControls(camera, renderer.domElement);
 
-  // set up water except its not working yet
+  // set up water or background, rn its water but it doesnt work
   water = createTerrain(scene);
 
   // create lighting
@@ -48,17 +60,41 @@ function init() {
   pointLight.position.set(50, 150, 50);
   scene.add(pointLight);
 
-  // at this point just launch fireworks immediately 
-  launchFireworks({ count: 10, color: 0xff0000, timing: 3 });
+  // create gui
+  setupGUI();
+
+  launchFireworks(fireworkConfig);
 
   animate();
 }
 
+function setupGUI() {
+  const gui = new dat.GUI();
+
+  // add controls to GUI
+  gui.add(fireworkConfig, "count", 1, 50).name("Firework Count").step(1);
+  gui.addColor(fireworkConfig, "color").name("Firework Color");
+  gui.add(fireworkConfig, "timing", 1, 10).name("Firework Timing").step(1);
+  gui.add(fireworkConfig, "launchFireworks").name("Launch Fireworks");
+}
+
 function launchFireworks(config) {
+  // clear setting
+  fireworks.forEach((firework) => {
+    if (firework && firework.destroy) {
+      firework.destroy(scene);
+    }
+  });
+  console.log("FIREWORKS BEING LAUNCHED")
+  fireworks = [];
+
+  // create fireworks based on config
   for (let i = 0; i < config.count; i++) {
     const firework = createFirework(scene, config.color, config.timing);
     fireworks.push(firework);
   }
+  console.log("IN FIREWORKS");
+  console.log(fireworks);
 }
 
 function animate() {
@@ -66,7 +102,7 @@ function animate() {
 
   const delta = clock.getDelta();
 
-  // update all fireworks
+  // update fireworks
   fireworks.forEach((firework) => firework.update(delta));
 
   // render the scene
@@ -79,5 +115,4 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// when main is called jsut run
 init();
