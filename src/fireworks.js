@@ -2,17 +2,19 @@ import * as THREE from "../node_modules/three/build/three.module.js";
 
 export function createFirework(scene, color, duration) {
   const particles = new THREE.BufferGeometry();
+  const trailParticles = new THREE.BufferGeometry();
   const particleCount = 100;
+  const maxTrailParticles = 10; // number of particles in the trail
   const positions = [];
   const velocities = [];
+  const trailPositions = [];
+  const trailVelocities = [];
   const maxSpeed = 50; // max speed of particles
-  const bounds = { x: 200, y: 200, z: 200 }; // max bounds for firework position, this needs to be changed based on zoom level, can be
-  // passed in as a parameter later
-  
+  const bounds = { x: 200, y: 200, z: 200 }; // max bounds for firework position
 
   // randomize the firework position within bounds of page
   const startX = Math.random() * bounds.x - bounds.x / 2;
-  const startY = Math.random() * bounds.y - bounds.y / 2;
+  const startY = 0
   const startZ = Math.random() * bounds.z - bounds.z / 2;
 
   // initialize firework particle positions and velocities
@@ -23,7 +25,7 @@ export function createFirework(scene, color, duration) {
     velocities.push(
       Math.cos(angle) * speed,
       Math.random() * speed,
-      Math.sin(angle) * speed
+      Math.abs(Math.sin(angle)) * speed
     );
   }
 
@@ -34,6 +36,22 @@ export function createFirework(scene, color, duration) {
   particles.setAttribute(
     "velocity",
     new THREE.Float32BufferAttribute(velocities, 3)
+  );
+
+  // create the trail particle system
+  for (let i = 0; i < maxTrailParticles; i++) {
+    trailPositions.push(startX, startY, startZ); // start positions for trail particles
+    trailVelocities.push(0, 0, 0); // initial velocities of the trail particles
+  }
+
+  trailParticles.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(trailPositions, 3)
+  );
+
+  trailParticles.setAttribute(
+    "velocity",
+    new THREE.Float32BufferAttribute(trailVelocities, 3)
   );
 
   // MAKING THE PARTICLES INTO CIRCLES
@@ -67,17 +85,33 @@ export function createFirework(scene, color, duration) {
     color: color,
     size: 2,
     transparent: true,
-    opacity: 1, 
+    opacity: 1,
     map: texture,
-    blending: THREE.AdditiveBlending, 
-    emissive: color, 
-    emissiveIntensity: 2.5, 
+    blending: THREE.AdditiveBlending,
+    emissive: color,
+    emissiveIntensity: 2.5,
   });
 
   const firework = new THREE.Points(particles, material);
   scene.add(firework);
 
-  const fireworkLight = new THREE.PointLight(color, 100); // testing,, trying to get light on terrain too
+  // trail material
+  const trailMaterial = new THREE.LineBasicMaterial({
+    color: color,
+    opacity: 0.5,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const trailGeometry = new THREE.BufferGeometry();
+  trailGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(trailPositions, 3)
+  );
+  const trail = new THREE.Line(trailGeometry, trailMaterial);
+  scene.add(trail);
+
+  const fireworkLight = new THREE.PointLight(color, 100);
   fireworkLight.position.set(0, 0, 0); // testing
   scene.add(fireworkLight);
 
@@ -88,50 +122,76 @@ export function createFirework(scene, color, duration) {
     update: (delta) => {
       elapsed += delta;
 
-      // check if the firework has lived long enough to be destroyed
+      // check if firework has lived long enough to be destroyed
       if (elapsed > lifetime) {
-        this.destroy(scene); // destroy the firework once its lifetime ends
-      } else {
+        this.destroy(scene); // destroy firework once its lifetime ends
+      } 
+        else {
         const positions = particles.attributes.position.array;
         const velocities = particles.attributes.velocity.array;
 
         // update positions of each particle based on velocity
         for (let i = 0; i < particleCount; i++) {
-          positions[i * 3] += velocities[i * 3] * delta;
-          positions[i * 3 + 1] +=
-            velocities[i * 3 + 1] * delta - 9.8 * delta * delta; // gravity effect
-          positions[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+          //positions[i * 3] += velocities[i * 3] * 0.02;
+          positions[i * 3 + 1] += velocities[i * 3 + 1] * delta; // go along y axis to have particles first rise upwards, then explode
+          //positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.006;
+
+          // explosion effect: After initial upward motion, scatter particles
+          if (elapsed > lifetime * 0.2) {
+            velocities[i * 3] += Math.abs((Math.random() - 0.5)) * delta * 50; // Horizontal scatter
+            velocities[i * 3 + 1] += Math.abs(Math.random() - 0.5) * delta * 50; // Horizontal scatter
+            velocities[i * 3 + 2] += Math.abs(Math.random() - 0.5) * delta * 50; // Vertical scatter
+            positions[i * 3] += velocities[i * 3] * delta;
+            positions[i * 3 + 1] +=
+              velocities[i * 3 + 1] * delta - 9.8 * delta * delta;
+            positions[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+          }
+
+          // try to update trail positions
+          if (i < maxTrailParticles) {
+            trailPositions[i * 3] += velocities[i * 3] * delta;
+            trailPositions[i * 3 + 1] +=
+              velocities[i * 3 + 1] * delta - 9.8 * delta * delta; // gravity effect
+            trailPositions[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+
+            // const dx = positions[i * 3] - startX;
+            // const dy = positions[i * 3 + 1] - startY;
+            // const dz = positions[i * 3 + 2] - startZ;
+
+            // trailPositions[trailIndex * 3] += dx * delta * 0.1; // Move along the line towards the current position
+            // trailPositions[trailIndex * 3 + 1] += dy * delta * 0.1;
+            // trailPositions[trailIndex * 3 + 2] += dz * delta * 0.1;
+          }
         }
+    
+        
+
         particles.attributes.position.needsUpdate = true;
 
+        // fade opacity
         const fadeFactor = Math.min(elapsed / lifetime, 1);
-        const speedFactor = Math.min(
-          Math.max(
-            Math.sqrt(
-              Math.pow(velocities[0], 2) +
-                Math.pow(velocities[1], 2) +
-                Math.pow(velocities[2], 2)
-            ) / maxSpeed,
-            0
-          ),
-          1
-        );
+        const opacity = Math.max(0, 1 - fadeFactor); 
+        trailMaterial.opacity = opacity;
 
-        // update opacity -- want fireworks to fade over time, this is also given by speedfactor
-        const opacity = 1 - (fadeFactor * (1 - speedFactor) * 2);
-        console.log(opacity);
-        material.opacity = opacity;
+        // update trail geometry
+        trailGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(trailPositions, 3)
+        );
+        trailParticles.attributes.position.needsUpdate = true;
       }
     },
 
     destroy: (scene) => {
       if (scene && firework) {
-        // remove firework from scene
+        // remove firework and trail from scene
         scene.remove(firework);
+        scene.remove(trail);
 
-        // dispose to free memory
         if (particles) particles.dispose();
         if (material) material.dispose();
+        if (trailParticles) trailParticles.dispose();
+        if (trailMaterial) trailMaterial.dispose();
       }
     },
   };
