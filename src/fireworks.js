@@ -88,8 +88,6 @@ export function createFirework(scene, color, duration) {
     opacity: 1,
     map: texture,
     blending: THREE.AdditiveBlending,
-    emissive: color,
-    emissiveIntensity: 2.5,
   });
 
   const firework = new THREE.Points(particles, material);
@@ -183,15 +181,23 @@ export function createFirework(scene, color, duration) {
     },
 
     destroy: (scene) => {
-      if (scene && firework) {
-        // remove firework and trail from scene
-        scene.remove(firework);
-        scene.remove(trail);
+      try {
+        if (scene && firework) {
+          // Remove firework and trail from scene
+          scene.remove(firework);
+          scene.remove(trail);
 
-        if (particles) particles.dispose();
-        if (material) material.dispose();
-        if (trailParticles) trailParticles.dispose();
-        if (trailMaterial) trailMaterial.dispose();
+          // Dispose of resources
+          if (particles) particles.dispose();
+          if (material) material.dispose();
+          if (trailParticles) trailParticles.dispose();
+          if (trailMaterial) trailMaterial.dispose();
+        }
+      } catch (error) {
+        console.error(
+          "ERROR:",
+          error
+        );
       }
     },
   };

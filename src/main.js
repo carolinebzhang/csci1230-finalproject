@@ -7,12 +7,23 @@ import { createFirework } from "./fireworks.js";
 import { createTerrain } from "./terrain.js";
 import * as dat from "dat.gui"; 
 
+
 let scene,
   camera,
   renderer,
   water,
   fireworks = [];
 let clock = new THREE.Clock();
+
+  // define control points for the Bezier curve
+  // incorporate this into gui? 
+let curvePoints = [
+  new THREE.Vector3(0, 50, 50), 
+  new THREE.Vector3(50, 100, 50), 
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(-50, 100, -50)
+];
+
 let isPaused = false; 
 // firework config for GUI controls
 let fireworkConfig = {
@@ -105,33 +116,79 @@ function setupGUI() {
   gui
     .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
     .name("Camera Curve");
-  gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen(); 
+  gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen();
+
+  // add option to visualize the bezier curve only
+  gui
+    .add({ bezier: () => createCameraPath(false) }, "bezier")
+    .name("Visualize Bezier Curve");
 }
 
-function createCameraPath() {
-  // points for camera path -- make into bezier curves at some point 
-  const curvePoints = [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(50, 100, 50),
-    new THREE.Vector3(0, 50, 0),
-    new THREE.Vector3(-50, 100, -50),
-    new THREE.Vector3(0, 50, 50), // return to starting point
-  ];
+function createCameraPath(fullAnimation=true) {
 
+  // function to compute a point on the cubic Bézier curve at a specific t
+  function cubicBezier(t, P0, P1, P2, P3) {
+    const x =
+      Math.pow(1 - t, 3) * P0.x +
+      3 * Math.pow(1 - t, 2) * t * P1.x +
+      3 * (1 - t) * Math.pow(t, 2) * P2.x +
+      Math.pow(t, 3) * P3.x;
+    const y =
+      Math.pow(1 - t, 3) * P0.y +
+      3 * Math.pow(1 - t, 2) * t * P1.y +
+      3 * (1 - t) * Math.pow(t, 2) * P2.y +
+      Math.pow(t, 3) * P3.y;
+    const z =
+      Math.pow(1 - t, 3) * P0.z +
+      3 * Math.pow(1 - t, 2) * t * P1.z +
+      3 * (1 - t) * Math.pow(t, 2) * P2.z +
+      Math.pow(t, 3) * P3.z;
+    return new THREE.Vector3(x, y, z);
+  }
 
-  cameraPath = new THREE.CatmullRomCurve3(curvePoints, true);
+  // visualize the Bézier curve by generating points along it
+  const curvePointsArray = [];
+  const numPoints = 100; // number of points to sample the curve
 
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints; // normalized parameter (t) from 0 to 1
+    const pointOnCurve = cubicBezier(t, ...curvePoints);
+    curvePointsArray.push(pointOnCurve);
+  }
+
+  // greate geometry and material to visualize the curve
   const curveGeometry = new THREE.BufferGeometry().setFromPoints(
-       cameraPath.getPoints(100)
-     );
-     const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-     const curveLine = new THREE.Line(curveGeometry, curveMaterial);
-  scene.add(curveLine); // to visualize camera curve
+    curvePointsArray
+  );
+  const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+  const curveLine = new THREE.Line(curveGeometry, curveMaterial);
+  scene.add(curveLine); // add the curve to the scene for visualization
+  if (fullAnimation){
+  // if the fullAnimation flag is true, then proceed with animation. Otherwise this function will just produce the 
+  // visualization for the curve. 
+  let cameraProgress = 0;
+  const cameraSpeed = 0.01; // adjust to control camera speed (ADD TO GUI LATER ON)
+
+  function animateCamera() {
+    // update the camera position based on the progress along the curve
+    camera.position.copy(cubicBezier(cameraProgress, ...curvePoints));
+    camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
+
+    // increment the progress for animation
+    cameraProgress += cameraSpeed;
+    if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
+
+    requestAnimationFrame(animateCamera);
+  }
+
+  animateCamera(); // start the camera animation
 }
+}
+
 
 function toggleCameraCurve() {
   if (!cameraPath) {
-    createCameraPath();
+    createCameraPath(true);
   }
 
   animateCameraCurve = !animateCameraCurve;
@@ -180,9 +237,16 @@ function saveSceneImage() {
   const imageDataURL = renderer.domElement.toDataURL("image/png");
 
   // create a temporary download link
+
+  const fileName =
+    prompt(
+      "Enter a file name for the image (default: 'scene.png'):",
+      "scene.png"
+    ) || "scene.png";
+
   const link = document.createElement("a");
   link.href = imageDataURL;
-  link.download = "scene.png";
+  link.download = fileName;
 
   // trigger the download
   link.click();
