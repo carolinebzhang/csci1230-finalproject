@@ -5,8 +5,7 @@ import { OrbitControls } from "../node_modules/three/examples/jsm/controls/Orbit
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
 import { createFirework } from "./fireworks.js";
 import { createTerrain } from "./terrain.js";
-import * as dat from "dat.gui"; 
-
+import * as dat from "dat.gui";
 
 let scene,
   camera,
@@ -15,28 +14,29 @@ let scene,
   fireworks = [];
 let clock = new THREE.Clock();
 
-  // define control points for the Bezier curve
-  // incorporate this into gui? 
-let curvePoints = [
-  new THREE.Vector3(0, 50, 50), 
-  new THREE.Vector3(50, 100, 50), 
+// define control points for the Bezier curve
+// incorporate this into gui?
+let curvePoints1 = [
   new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(-50, 100, -50)
+  new THREE.Vector3(50, 100, 50),
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(-50, 100, -50),
 ];
 
-let isPaused = false; 
+let isPaused = false;
 // firework config for GUI controls
 let fireworkConfig = {
   count: 10,
   color: "#ff0000", // default is red
-  timing: 3, 
+  timing: 3,
   launchFireworks: function () {
     launchFireworks(fireworkConfig);
     animate();
   },
 };
 
-let cameraPath, cameraPathProgress = 0; // Camera path and progress
+let cameraPath,
+  cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
 let cameraCurveStatus = { status: "OFF" };
 
@@ -52,7 +52,6 @@ function init() {
   scene.background = new THREE.TextureLoader().load(
     "../textures/dark_clouds.JPG"
   );
-
 
   // set up camera
   camera = new THREE.PerspectiveCamera(
@@ -122,10 +121,11 @@ function setupGUI() {
   gui
     .add({ bezier: () => createCameraPath(false) }, "bezier")
     .name("Visualize Bezier Curve");
+
+  // add bezier camera curve options
 }
 
-function createCameraPath(fullAnimation=true) {
-
+function createCameraPath(fullAnimation = true) {
   // function to compute a point on the cubic Bézier curve at a specific t
   function cubicBezier(t, P0, P1, P2, P3) {
     const x =
@@ -152,7 +152,7 @@ function createCameraPath(fullAnimation=true) {
 
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints; // normalized parameter (t) from 0 to 1
-    const pointOnCurve = cubicBezier(t, ...curvePoints);
+    const pointOnCurve = cubicBezier(t, ...curvePoints2);
     curvePointsArray.push(pointOnCurve);
   }
 
@@ -163,28 +163,27 @@ function createCameraPath(fullAnimation=true) {
   const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
   const curveLine = new THREE.Line(curveGeometry, curveMaterial);
   scene.add(curveLine); // add the curve to the scene for visualization
-  if (fullAnimation){
-  // if the fullAnimation flag is true, then proceed with animation. Otherwise this function will just produce the 
-  // visualization for the curve. 
-  let cameraProgress = 0;
-  const cameraSpeed = 0.01; // adjust to control camera speed (ADD TO GUI LATER ON)
+  if (fullAnimation) {
+    // if the fullAnimation flag is true, then proceed with animation. Otherwise this function will just produce the
+    // visualization for the curve.
+    let cameraProgress = 0;
+    const cameraSpeed = 0.01; // adjust to control camera speed (ADD TO GUI LATER ON)
 
-  function animateCamera() {
-    // update the camera position based on the progress along the curve
-    camera.position.copy(cubicBezier(cameraProgress, ...curvePoints));
-    camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
+    function animateCamera() {
+      // update the camera position based on the progress along the curve
+      camera.position.copy(cubicBezier(cameraProgress, ...curvePoints1));
+      camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
 
-    // increment the progress for animation
-    cameraProgress += cameraSpeed;
-    if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
+      // increment the progress for animation
+      cameraProgress += cameraSpeed;
+      if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
 
-    requestAnimationFrame(animateCamera);
+      requestAnimationFrame(animateCamera);
+    }
+
+    animateCamera(); // start the camera animation
   }
-
-  animateCamera(); // start the camera animation
 }
-}
-
 
 function toggleCameraCurve() {
   if (!cameraPath) {
@@ -204,12 +203,12 @@ function toggleCameraCurve() {
 
 function updateCameraPosition(delta) {
   if (animateCameraCurve && cameraPath) {
-    const pathDuration = 10; 
+    const pathDuration = 10;
     cameraPathProgress += delta / pathDuration;
 
     if (cameraPathProgress >= 1) {
-      cameraPathProgress = 1; 
-      animateCameraCurve = false; 
+      cameraPathProgress = 1;
+      animateCameraCurve = false;
     }
 
     // get the camera position along the curve
@@ -252,7 +251,6 @@ function saveSceneImage() {
   link.click();
 }
 
-
 function launchFireworks(config) {
   // clear setting
   fireworks.forEach((firework) => {
@@ -260,7 +258,7 @@ function launchFireworks(config) {
       firework.destroy(scene);
     }
   });
-  console.log("FIREWORKS BEING LAUNCHED")
+  console.log("FIREWORKS BEING LAUNCHED");
   fireworks = [];
 
   // create fireworks based on config

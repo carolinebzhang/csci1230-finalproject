@@ -1,4 +1,5 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
+import { hexToRGB } from "./utils.js";
 
 export function createFirework(scene, color, duration) {
   const particles = new THREE.BufferGeometry();
@@ -14,7 +15,7 @@ export function createFirework(scene, color, duration) {
 
   // randomize the firework position within bounds of page
   const startX = Math.random() * bounds.x - bounds.x / 2;
-  const startY = 0
+  const startY = 0;
   const startZ = Math.random() * bounds.z - bounds.z / 2;
 
   // initialize firework particle positions and velocities
@@ -65,14 +66,21 @@ export function createFirework(scene, color, duration) {
   const gradient = ctx.createRadialGradient(
     size / 2,
     size / 2,
-    size / 4,
+    size / 32,
     size / 2,
     size / 2,
     size / 2
   );
+  // incorporating user color input into gradient
+  const red = hexToRGB(color).r.toString();
+  const green = hexToRGB(color).g.toString();
+  const blue = hexToRGB(color).b.toString();
   gradient.addColorStop(0, "white");
-  gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.2)"); // semi-transparent edge
-  gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // fully transparent edge
+  gradient.addColorStop(
+    0.5,
+    "rgba(" + red + ", " + green + ", " + blue + ", 0.5)"
+  ); // semi-transparent edge
+  gradient.addColorStop(1, "rgba(" + red + ", " + green + ", " + blue + ", 0)"); // fully transparent edge
 
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);
@@ -82,7 +90,7 @@ export function createFirework(scene, color, duration) {
   texture.needsUpdate = true;
 
   const material = new THREE.PointsMaterial({
-    color: color,
+    color: 0xffffff, //white
     size: 2,
     transparent: true,
     opacity: 1,
@@ -109,9 +117,9 @@ export function createFirework(scene, color, duration) {
   const trail = new THREE.Line(trailGeometry, trailMaterial);
   scene.add(trail);
 
-  const fireworkLight = new THREE.PointLight(color, 100);
-  fireworkLight.position.set(0, 0, 0); // testing
-  scene.add(fireworkLight);
+  // const fireworkLight = new THREE.PointLight(color, 100);
+  // fireworkLight.position.set(0, 0, 0); // testing
+  // scene.add(fireworkLight);
 
   const lifetime = duration;
   let elapsed = 0;
@@ -123,8 +131,7 @@ export function createFirework(scene, color, duration) {
       // check if firework has lived long enough to be destroyed
       if (elapsed > lifetime) {
         this.destroy(scene); // destroy firework once its lifetime ends
-      } 
-        else {
+      } else {
         const positions = particles.attributes.position.array;
         const velocities = particles.attributes.velocity.array;
 
@@ -136,7 +143,7 @@ export function createFirework(scene, color, duration) {
 
           // explosion effect: After initial upward motion, scatter particles
           if (elapsed > lifetime * 0.2) {
-            velocities[i * 3] += Math.abs((Math.random() - 0.5)) * delta * 50; // Horizontal scatter
+            velocities[i * 3] += Math.abs(Math.random() - 0.5) * delta * 50; // Horizontal scatter
             velocities[i * 3 + 1] += Math.abs(Math.random() - 0.5) * delta * 50; // Horizontal scatter
             velocities[i * 3 + 2] += Math.abs(Math.random() - 0.5) * delta * 50; // Vertical scatter
             positions[i * 3] += velocities[i * 3] * delta;
@@ -161,14 +168,12 @@ export function createFirework(scene, color, duration) {
             // trailPositions[trailIndex * 3 + 2] += dz * delta * 0.1;
           }
         }
-    
-        
 
         particles.attributes.position.needsUpdate = true;
 
         // fade opacity
         const fadeFactor = Math.min(elapsed / lifetime, 1);
-        const opacity = Math.max(0, 1 - fadeFactor); 
+        const opacity = Math.max(0, 1 - fadeFactor);
         trailMaterial.opacity = opacity;
 
         // update trail geometry
@@ -194,10 +199,7 @@ export function createFirework(scene, color, duration) {
           if (trailMaterial) trailMaterial.dispose();
         }
       } catch (error) {
-        console.error(
-          "ERROR:",
-          error
-        );
+        console.error("ERROR:", error);
       }
     },
   };
