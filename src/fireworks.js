@@ -186,7 +186,9 @@ export function createFirework(scene, color, duration) {
     },
 
     destroy: (scene) => {
+      console.log("here1");
       try {
+        console.log("here2");
         if (scene && firework) {
           // Remove firework and trail from scene
           scene.remove(firework);

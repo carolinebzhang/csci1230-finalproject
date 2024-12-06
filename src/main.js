@@ -23,6 +23,20 @@ let curvePoints1 = [
   new THREE.Vector3(-50, 100, -50),
 ];
 
+let curvePoints2 = [
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(50, 100, 50),
+  new THREE.Vector3(50, 100, 100),
+  new THREE.Vector3(100, 100, 100),
+];
+
+let curvePoints3 = [
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(-50, 100, 50),
+  new THREE.Vector3(50, 100, 100),
+  new THREE.Vector3(100, 100, 100),
+];
+
 let isPaused = false;
 // firework config for GUI controls
 let fireworkConfig = {
@@ -39,6 +53,7 @@ let cameraPath,
   cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
 let cameraCurveStatus = { status: "OFF" };
+let cameraSpeed = { speed: 0.005 }; // adjust to control camera speed
 
 function init() {
   console.log("Main.js is running");
@@ -122,7 +137,8 @@ function setupGUI() {
     .add({ bezier: () => createCameraPath(false) }, "bezier")
     .name("Visualize Bezier Curve");
 
-  // add bezier camera curve options
+  // add option to toggle camera speed
+  gui.add(cameraSpeed, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
 function createCameraPath(fullAnimation = true) {
@@ -152,7 +168,7 @@ function createCameraPath(fullAnimation = true) {
 
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints; // normalized parameter (t) from 0 to 1
-    const pointOnCurve = cubicBezier(t, ...curvePoints2);
+    const pointOnCurve = cubicBezier(t, ...curvePoints1);
     curvePointsArray.push(pointOnCurve);
   }
 
@@ -167,7 +183,6 @@ function createCameraPath(fullAnimation = true) {
     // if the fullAnimation flag is true, then proceed with animation. Otherwise this function will just produce the
     // visualization for the curve.
     let cameraProgress = 0;
-    const cameraSpeed = 0.01; // adjust to control camera speed (ADD TO GUI LATER ON)
 
     function animateCamera() {
       // update the camera position based on the progress along the curve
@@ -175,7 +190,7 @@ function createCameraPath(fullAnimation = true) {
       camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
 
       // increment the progress for animation
-      cameraProgress += cameraSpeed;
+      cameraProgress += cameraSpeed.speed;
       if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
 
       requestAnimationFrame(animateCamera);
