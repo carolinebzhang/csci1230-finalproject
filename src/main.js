@@ -5,6 +5,7 @@ import { OrbitControls } from "../node_modules/three/examples/jsm/controls/Orbit
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
 import { createFirework } from "./fireworks.js";
 import { createTerrain } from "./terrain.js";
+import { cubicBezier } from "./utils.js";
 import * as dat from "dat.gui";
 
 let scene,
@@ -16,26 +17,38 @@ let clock = new THREE.Clock();
 
 // define control points for the Bezier curve
 // incorporate this into gui?
-let curvePoints1 = [
-  new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(50, 100, 50),
-  new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(-50, 100, -50),
-];
-
-let curvePoints2 = [
-  new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(50, 100, 50),
-  new THREE.Vector3(50, 100, 100),
-  new THREE.Vector3(100, 100, 100),
-];
-
-let curvePoints3 = [
-  new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(-50, 100, 50),
-  new THREE.Vector3(50, 100, 100),
-  new THREE.Vector3(100, 100, 100),
-];
+const curvePoints0 = {
+  name: "OFF",
+  points: [],
+};
+const curvePoints1 = {
+  name: "Bezier Curve 1",
+  points: [
+    new THREE.Vector3(0, 50, 50),
+    new THREE.Vector3(50, 100, 50),
+    new THREE.Vector3(0, 50, 50),
+    new THREE.Vector3(-50, 100, -50),
+  ],
+};
+const curvePoints2 = {
+  name: "Bezier Curve 2",
+  points: [
+    new THREE.Vector3(0, 50, 50),
+    new THREE.Vector3(50, 100, 50),
+    new THREE.Vector3(50, 100, 100),
+    new THREE.Vector3(100, 100, 100),
+  ],
+};
+const curvePoints3 = {
+  name: "Bezier Curve 3",
+  points: [
+    new THREE.Vector3(0, 50, 50),
+    new THREE.Vector3(-50, 100, 50),
+    new THREE.Vector3(50, 100, 100),
+    new THREE.Vector3(100, 100, 100),
+  ],
+};
+let cameraCurveList = [curvePoints0, curvePoints1, curvePoints2, curvePoints3];
 
 let isPaused = false;
 // firework config for GUI controls
@@ -52,7 +65,7 @@ let fireworkConfig = {
 let cameraPath,
   cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
-let cameraCurveStatus = { status: "OFF" };
+let cameraCurveStatus = { name: "OFF", points: [] };
 let cameraSpeed = { speed: 0.005 }; // adjust to control camera speed
 
 function init() {
@@ -127,10 +140,24 @@ function setupGUI() {
 
   // add camera curve functionality
   // Add camera curve toggle
+  // gui
+  //   .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
+  //   .name("Camera Curve");
+  // gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen();
+
+  // gives multiple bezier curve options
   gui
-    .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
-    .name("Camera Curve");
-  gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen();
+    .add(cameraCurveStatus, "name", [
+      curvePoints0.name,
+      curvePoints1.name,
+      curvePoints2.name,
+      curvePoints3.name,
+    ])
+    .setValue(curvePoints0.name)
+    .name("Camera Curve")
+    .onChange(function (value) {
+      toggleCameraCurve(value);
+    });
 
   // add option to visualize the bezier curve only
   gui
@@ -142,33 +169,13 @@ function setupGUI() {
 }
 
 function createCameraPath(fullAnimation = true) {
-  // function to compute a point on the cubic Bézier curve at a specific t
-  function cubicBezier(t, P0, P1, P2, P3) {
-    const x =
-      Math.pow(1 - t, 3) * P0.x +
-      3 * Math.pow(1 - t, 2) * t * P1.x +
-      3 * (1 - t) * Math.pow(t, 2) * P2.x +
-      Math.pow(t, 3) * P3.x;
-    const y =
-      Math.pow(1 - t, 3) * P0.y +
-      3 * Math.pow(1 - t, 2) * t * P1.y +
-      3 * (1 - t) * Math.pow(t, 2) * P2.y +
-      Math.pow(t, 3) * P3.y;
-    const z =
-      Math.pow(1 - t, 3) * P0.z +
-      3 * Math.pow(1 - t, 2) * t * P1.z +
-      3 * (1 - t) * Math.pow(t, 2) * P2.z +
-      Math.pow(t, 3) * P3.z;
-    return new THREE.Vector3(x, y, z);
-  }
-
   // visualize the Bézier curve by generating points along it
   const curvePointsArray = [];
   const numPoints = 100; // number of points to sample the curve
 
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints; // normalized parameter (t) from 0 to 1
-    const pointOnCurve = cubicBezier(t, ...curvePoints1);
+    const pointOnCurve = cubicBezier(t, ...cameraCurveStatus.points);
     curvePointsArray.push(pointOnCurve);
   }
 
@@ -186,7 +193,9 @@ function createCameraPath(fullAnimation = true) {
 
     function animateCamera() {
       // update the camera position based on the progress along the curve
-      camera.position.copy(cubicBezier(cameraProgress, ...curvePoints1));
+      camera.position.copy(
+        cubicBezier(cameraProgress, ...cameraCurveStatus.points)
+      );
       camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
 
       // increment the progress for animation
@@ -200,20 +209,23 @@ function createCameraPath(fullAnimation = true) {
   }
 }
 
-function toggleCameraCurve() {
-  if (!cameraPath) {
-    createCameraPath(true);
-  }
+function toggleCameraCurve(curveName) {
+  cameraCurveStatus.points = cameraCurveList.find(
+    (curve) => curve.name == curveName
+  ).points;
 
-  animateCameraCurve = !animateCameraCurve;
+  if (!cameraPath && curveName != "OFF") {
+    createCameraPath(true);
+    animateCameraCurve = true;
+    cameraPathProgress = 0; // reset progress if toggled on
+  } else {
+    animateCameraCurve = false;
+  }
 
   // reset progress if toggled on
-  if (animateCameraCurve) {
-    cameraPathProgress = 0;
-    cameraCurveStatus.status = "ON";
-  } else {
-    cameraCurveStatus.status = "OFF";
-  }
+  // if (animateCameraCurve) {
+  //   cameraPathProgress = 0;
+  // }
 }
 
 function updateCameraPosition(delta) {

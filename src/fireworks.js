@@ -77,7 +77,7 @@ export function createFirework(scene, color, duration) {
   const blue = hexToRGB(color).b.toString();
   gradient.addColorStop(0, "white");
   gradient.addColorStop(
-    0.5,
+    0.3,
     "rgba(" + red + ", " + green + ", " + blue + ", 0.5)"
   ); // semi-transparent edge
   gradient.addColorStop(1, "rgba(" + red + ", " + green + ", " + blue + ", 0)"); // fully transparent edge
@@ -186,9 +186,7 @@ export function createFirework(scene, color, duration) {
     },
 
     destroy: (scene) => {
-      console.log("here1");
       try {
-        console.log("here2");
         if (scene && firework) {
           // Remove firework and trail from scene
           scene.remove(firework);
