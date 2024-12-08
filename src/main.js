@@ -18,7 +18,7 @@ let scene,
 let clock = new THREE.Clock();
 
 // define control points for the Bezier curve
-const curvePoints = [
+let curvePoints = [
   new THREE.Vector3(0, 50, 50),
   new THREE.Vector3(50, 100, 50),
   new THREE.Vector3(0, 50, 50),
@@ -187,17 +187,19 @@ function createCameraPath(fullAnimation = true) {
 }
 
 function toggleCameraCurve(curveStatus) {
-  if (!cameraPath) {
+  //if (!cameraPath) {
+  if (curveStatus) {
     createCameraPath(true);
+  } else {
   }
-
-  cameraConfig.curveStatus = curveStatus;
-  animateCameraCurve = !animateCameraCurve;
-
-  // reset progress if toggled on
-  if (animateCameraCurve) {
-    cameraPathProgress = 0;
-  }
+  //}
+  // //cameraConfig.curveStatus = curveStatus;
+  // animateCameraCurve = curveStatus;
+  // cameraConfig.curveStatus = curveStatus;
+  // // reset progress if toggled on
+  // if (animateCameraCurve) {
+  //   cameraPathProgress = 0;
+  // }
 }
 
 function updateCameraPosition(delta) {
@@ -280,7 +282,7 @@ function animate() {
   fireworks.forEach((firework) => firework.update(delta));
 
   // update camera position if curve animation is active
-  updateCameraPosition(delta);
+  //updateCameraPosition(delta);
 
   // render the scene
   //renderer.render(scene, camera);
