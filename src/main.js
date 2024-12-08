@@ -10,48 +10,20 @@ import { createBloomEffect } from "./utils/visualeffects.js";
 import * as dat from "dat.gui";
 
 let scene,
- water,
+  water,
   camera,
   renderer,
   fireworks = [];
 
-
 let clock = new THREE.Clock();
 
 // define control points for the Bezier curve
-// incorporate this into gui?
-const curvePoints0 = {
-  name: "OFF",
-  points: [],
-};
-const curvePoints1 = {
-  name: "Bezier Curve 1",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(50, 100, 50),
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(-50, 100, -50),
-  ],
-};
-const curvePoints2 = {
-  name: "Bezier Curve 2",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(50, 100, 50),
-    new THREE.Vector3(50, 100, 100),
-    new THREE.Vector3(100, 100, 100),
-  ],
-};
-const curvePoints3 = {
-  name: "Bezier Curve 3",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(-50, 100, 50),
-    new THREE.Vector3(50, 100, 100),
-    new THREE.Vector3(100, 100, 100),
-  ],
-};
-let cameraCurveList = [curvePoints0, curvePoints1, curvePoints2, curvePoints3];
+const curvePoints = [
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(50, 100, 50),
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(-50, 100, -50),
+];
 
 let isPaused = false;
 // firework config for GUI controls
@@ -68,8 +40,11 @@ let fireworkConfig = {
 let cameraPath,
   cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
-let cameraCurveStatus = { name: "OFF", points: [] };
-let cameraSpeed = { speed: 0.005 }; // adjust to control camera speed
+// for GUI adjustments
+let cameraConfig = {
+  curveStatus: false,
+  speed: 0.005,
+};
 let composer;
 function init() {
   console.log("Main.js is running");
@@ -81,9 +56,7 @@ function init() {
 
   scene = new THREE.Scene();
   // set the scene's background to the dark clouds texture
-  scene.background = new THREE.TextureLoader().load(
-    "PLACEHOLDER"
-  );
+  scene.background = new THREE.TextureLoader().load("PLACEHOLDER");
 
   // set up camera
   camera = new THREE.PerspectiveCamera(
@@ -96,13 +69,10 @@ function init() {
 
   // set up renderer
   renderer = new THREE.WebGLRenderer();
-  
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.getElementById("canvas-container").appendChild(renderer.domElement);
-
-
-
 
   // set up orbit controls
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -114,8 +84,6 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(100, 200, 100);
   directionalLight.target.position.set(0, 0, 0);
-
-  
 
   scene.add(directionalLight);
   scene.add(directionalLight.target);
@@ -154,21 +122,21 @@ function setupGUI() {
   // gui
   //   .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
   //   .name("Camera Curve");
-  // gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen();
-
-  // gives multiple bezier curve options
   gui
-    .add(cameraCurveStatus, "name", [
-      curvePoints0.name,
-      curvePoints1.name,
-      curvePoints2.name,
-      curvePoints3.name,
-    ])
-    .setValue(curvePoints0.name)
-    .name("Camera Curve")
+    .add(cameraConfig, "curveStatus")
+    .name("Camera Curve Status")
     .onChange(function (value) {
       toggleCameraCurve(value);
     });
+
+  // allows user to adjust bezier curve
+  const bezierFolder = gui.addFolder("Adjust Camera Curve");
+  for (let i = 0; i < 4; i++) {
+    const bezierPointFolder = bezierFolder.addFolder("Bezier Point " + (i + 1));
+    bezierPointFolder.add(curvePoints[i], "x", -100, 100).name("X").step(1);
+    bezierPointFolder.add(curvePoints[i], "y", -100, 100).name("Y").step(1);
+    bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
+  }
 
   // add option to visualize the bezier curve only
   gui
@@ -176,7 +144,7 @@ function setupGUI() {
     .name("Visualize Bezier Curve");
 
   // add option to toggle camera speed
-  gui.add(cameraSpeed, "speed", 0, 0.01).name("Camera Speed").step(0.001);
+  gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
 function createCameraPath(fullAnimation = true) {
@@ -186,7 +154,7 @@ function createCameraPath(fullAnimation = true) {
 
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints; // normalized parameter (t) from 0 to 1
-    const pointOnCurve = cubicBezier(t, ...cameraCurveStatus.points);
+    const pointOnCurve = cubicBezier(t, ...curvePoints);
     curvePointsArray.push(pointOnCurve);
   }
 
@@ -204,13 +172,11 @@ function createCameraPath(fullAnimation = true) {
 
     function animateCamera() {
       // update the camera position based on the progress along the curve
-      camera.position.copy(
-        cubicBezier(cameraProgress, ...cameraCurveStatus.points)
-      );
+      camera.position.copy(cubicBezier(cameraProgress, ...curvePoints));
       camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
 
       // increment the progress for animation
-      cameraProgress += cameraSpeed.speed;
+      cameraProgress += cameraConfig.speed;
       if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
 
       requestAnimationFrame(animateCamera);
@@ -220,23 +186,18 @@ function createCameraPath(fullAnimation = true) {
   }
 }
 
-function toggleCameraCurve(curveName) {
-  cameraCurveStatus.points = cameraCurveList.find(
-    (curve) => curve.name == curveName
-  ).points;
-
-  if (!cameraPath && curveName != "OFF") {
+function toggleCameraCurve(curveStatus) {
+  if (!cameraPath) {
     createCameraPath(true);
-    animateCameraCurve = true;
-    cameraPathProgress = 0; // reset progress if toggled on
-  } else {
-    animateCameraCurve = false;
   }
 
+  cameraConfig.curveStatus = curveStatus;
+  animateCameraCurve = !animateCameraCurve;
+
   // reset progress if toggled on
-  // if (animateCameraCurve) {
-  //   cameraPathProgress = 0;
-  // }
+  if (animateCameraCurve) {
+    cameraPathProgress = 0;
+  }
 }
 
 function updateCameraPosition(delta) {
