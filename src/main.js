@@ -5,14 +5,17 @@ import { OrbitControls } from "../node_modules/three/examples/jsm/controls/Orbit
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
 import { createFirework } from "./fireworks.js";
 import { createTerrain } from "./terrain.js";
-import { cubicBezier } from "./utils.js";
+import { cubicBezier } from "./utils/utils.js";
+import { createBloomEffect } from "./utils/visualeffects.js";
 import * as dat from "dat.gui";
 
 let scene,
+ water,
   camera,
   renderer,
-  water,
   fireworks = [];
+
+
 let clock = new THREE.Clock();
 
 // define control points for the Bezier curve
@@ -67,9 +70,10 @@ let cameraPath,
 let animateCameraCurve = false; // Flag to control camera curve animation
 let cameraCurveStatus = { name: "OFF", points: [] };
 let cameraSpeed = { speed: 0.005 }; // adjust to control camera speed
-
+let composer;
 function init() {
   console.log("Main.js is running");
+  //const composer = createBloomEffect(scene, camera, renderer);
 
   // SET UP SCENE
   //scene = new THREE.Scene();
@@ -96,6 +100,9 @@ function init() {
   renderer.shadowMap.enabled = true;
   document.getElementById("canvas-container").appendChild(renderer.domElement);
 
+
+
+
   // set up orbit controls
   const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -106,6 +113,9 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(100, 200, 100);
   directionalLight.target.position.set(0, 0, 0);
+
+  
+
   scene.add(directionalLight);
   scene.add(directionalLight.target);
 
@@ -311,7 +321,13 @@ function animate() {
   updateCameraPosition(delta);
 
   // render the scene
-  renderer.render(scene, camera);
+  //renderer.render(scene, camera);
+  // initialize composer only once
+  if (!composer) {
+    composer = createBloomEffect(scene, camera, renderer);
+  }
+
+  composer.render();
 }
 
 window.addEventListener("resize", () => {
@@ -319,6 +335,7 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
+  composer.setSize(width, height);
 });
 
 init();

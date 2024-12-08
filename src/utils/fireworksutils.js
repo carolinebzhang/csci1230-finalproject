@@ -1,7 +1,14 @@
-import * as THREE from "../node_modules/three/build/three.module.js";
+import * as THREE from "three";
 import { hexToRGB } from "./utils.js";
 
-export function initializeParticles(particleCount, startX, startY, startZ, maxSpeed) {
+
+export function initializeParticles(
+  particleCount,
+  startX,
+  startY,
+  startZ,
+  maxSpeed
+) {
   const positions = [];
   const velocities = [];
   for (let i = 0; i < particleCount; i++) {
@@ -11,9 +18,9 @@ export function initializeParticles(particleCount, startX, startY, startZ, maxSp
 
     positions.push(startX, startY, startZ); // initial positions
     velocities.push(
-      Math.cos(angle) * (speed * 0.5), 
-      upwardSpeed, 
-      Math.sin(angle) * (speed * 0.5) 
+      Math.cos(angle) * (speed * 0.5),
+      upwardSpeed,
+      Math.sin(angle) * (speed * 0.5)
     );
   }
   return { positions, velocities };
@@ -135,14 +142,13 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       // update positions based on velocity
       positions[i * 3] +=
         velocities[i * 3] * delta * 2 * Math.abs(Math.cos(elapsed)); // horizontal (X-axis)
-      positions[i * 3 + 1] +=
-        velocities[i * 3 + 1] * delta - (9.8 * delta * 1.1); // gravity on Y-axis
+      positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta * 1.1; // gravity on Y-axis
       positions[i * 3 + 2] +=
         velocities[i * 3 + 2] * delta * Math.abs(Math.sin(elapsed)); // depth motion (Z-axis)
     }
   }
 
-  particles.attributes.position.needsUpdate = true; 
+  particles.attributes.position.needsUpdate = true;
 }
 
 export const trailHistory = Array.from({ length: 100 }, () => []);

@@ -1,5 +1,5 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
-import { hexToRGB } from "./utils.js";
+import { hexToRGB } from "./utils/utils.js";
 import {
   initializeParticles,
   initializeTrail,
@@ -8,7 +8,7 @@ import {
   createTrailMaterial,
   updateParticles,
   updateTrail,
-} from "./fireworksutils.js";
+} from "./utils/fireworksutils.js";
 
 // Main function to create the firework
 export function createFirework(scene, color, duration) {

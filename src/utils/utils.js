@@ -1,4 +1,4 @@
-import * as THREE from "../node_modules/three/build/three.module.js";
+import * as THREE from "three";
 
 // function to compute a point on the cubic Bézier curve at a specific t
 export function cubicBezier(t, P0, P1, P2, P3) {
