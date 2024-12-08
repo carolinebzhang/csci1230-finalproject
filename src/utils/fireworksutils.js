@@ -117,14 +117,27 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
 
   const particleCount = positions.length / 3;
 
+  const maxHeightThreshold = 10;
+
+  //let velocityScaleFactor = 1.0;
+
   for (let i = 0; i < particleCount; i++) {
     // update positions based on velocity
-    positions[i * 3] += velocities[i * 3] * 0.00002; // horizontal motion (X-axis)
-    positions[i * 3 + 1] += velocities[i * 3 + 1] * delta; // vertical motion (Y-axis)
-    positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.0006; // depth motion (Z-axis)
+    if (elapsed <= lifetime * 0.2) {
+    let diff = (i) / particleCount;
 
+    const velocityFactor = (1 - diff); // bottom-most particles have higher velocity
+
+    positions[i * 3] += velocities[i * 3] * 0.00002;
+    positions[i * 3 + 1] += (velocities[i * 3 + 1] * velocityFactor + 100) * delta;
+    positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.0006;
+    }
     // after initial upward motion, apply gravity and scatter particles
     if (elapsed > lifetime * 0.2) {
+
+      // later: divide 360 by number of "streaks" you want to create, and then create lines of particles going outward in 
+      // radial fashion 
+      
       const gravity = 9.8; // gravity constant
       const drag = 0.97; // drag to slow down
 
@@ -143,12 +156,17 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       // update positions based on velocity
       positions[i * 3] +=
         velocities[i * 3] * delta * 2 * Math.abs(Math.cos(elapsed)); // horizontal (X-axis)
-      positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta * 1.1; // gravity on Y-axis
+      positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta * 2; // gravity on Y-axis
       positions[i * 3 + 2] +=
         velocities[i * 3 + 2] * delta * Math.abs(Math.sin(elapsed)); // depth motion (Z-axis)
+
+      // make the particles more spread out
+      positions[i * 3] += velocities[i * 3] * (0.0002 + elapsed * 0.007);
+      positions[i * 3 + 2] +=
+        velocities[i * 3 + 2] * (0.0002 + elapsed * 0.007);
     }
   }
-
+  
   particles.attributes.position.needsUpdate = true;
 }
 

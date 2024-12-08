@@ -82,7 +82,7 @@ function init() {
   scene = new THREE.Scene();
   // set the scene's background to the dark clouds texture
   scene.background = new THREE.TextureLoader().load(
-    "../textures/dark_clouds.JPG"
+    "PLACEHOLDER"
   );
 
   // set up camera
@@ -96,6 +96,7 @@ function init() {
 
   // set up renderer
   renderer = new THREE.WebGLRenderer();
+  
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.getElementById("canvas-container").appendChild(renderer.domElement);
