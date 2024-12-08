@@ -50,6 +50,7 @@ export function createFirework(scene, color, duration) {
     "position",
     new THREE.Float32BufferAttribute(trailPositions, 3)
   );
+
   trailParticles.setAttribute(
     "velocity",
     new THREE.Float32BufferAttribute(trailVelocities, 3)
@@ -60,13 +61,16 @@ export function createFirework(scene, color, duration) {
   const firework = new THREE.Points(particles, particleMaterial);
   scene.add(firework);
 
-  const trailMaterial = createTrailMaterial(color);
-  const trailGeometry = new THREE.BufferGeometry();
-  trailGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(trailPositions, 3)
-  );
-  const trail = new THREE.Line(trailGeometry, trailMaterial);
+  //const trailMaterial = createTrailMaterial(color);
+  const trailTexture = createParticleTexture(color)
+  const trailMaterial = createParticleMaterial(trailTexture);
+  const trail = new THREE.Points(trailParticles, trailMaterial);
+  // const trailGeometry = new THREE.BufferGeometry();
+  // trailGeometry.setAttribute(
+  //   "position",
+  //   new THREE.Float32BufferAttribute(trailPositions, 3)
+  // );
+  //const trail = new THREE.Line(trailGeometry, trailMaterial);
   scene.add(trail);
 
   let elapsed = 0;
@@ -77,7 +81,21 @@ export function createFirework(scene, color, duration) {
       destroy(scene);
     } else {
       updateParticles(particles, delta, elapsed, duration);
-      updateTrail(trail, trailGeometry, trailPositions, elapsed, duration);
+      //updateTrail(trail, trailGeometry, trailPositions, elapsed, duration);
+      const positionHistory = [];
+      const historyLimit = 10; 
+      updateTrail(
+        trailParticles,
+        particles, 
+        delta,
+        elapsed,
+        duration,
+        positionHistory,
+        historyLimit
+        //startX,
+        //startY,
+        //startZ
+      );
     }
   }
 

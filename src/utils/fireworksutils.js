@@ -8,7 +8,7 @@ export function initializeParticles(
   startY,
   startZ,
   maxSpeed
-) {
+){
   const positions = [];
   const velocities = [];
   for (let i = 0; i < particleCount; i++) {
@@ -26,11 +26,12 @@ export function initializeParticles(
   return { positions, velocities };
 }
 
-let trailPositions = [];
-let trailVelocities = [];
+
 
 // function to initialize trail attributes
 export function initializeTrail(maxTrailParticles, startX, startY, startZ) {
+  let trailPositions = [];
+  let trailVelocities = [];
   for (let i = 0; i < maxTrailParticles; i++) {
     trailPositions.push(startX, startY, startZ);
     trailVelocities.push(0, 0, 0);
@@ -151,23 +152,80 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
   particles.attributes.position.needsUpdate = true;
 }
 
-export const trailHistory = Array.from({ length: 100 }, () => []);
-export function updateTrail(particleIndex, newPosition, color) {
-  // if (particleIndex < 0 || particleIndex >= trailHistory.length) {
-  //   console.error(`Invalid particle index: ${particleIndex}`);
-  //   return []; // Return an empty array or handle the error accordingly
-  // }
+export function updateTrail(
+  trailParticles,
+  fireworkParticles,
+  delta,
+  elapsed,
+  lifetime,
+  positionHistory,
+  historyLimit
+) {
+  const trailPositions = trailParticles.attributes.position.array;
+  const fireworkPositions = fireworkParticles.attributes.position.array;
 
-  // const trail = trailHistory[particleIndex];
+  const trailCount = trailParticles.count;
+  const segmentsPerTrail = trailCount / fireworkParticles.count;
 
-  // // Add the new position and limit the history length
-  // trail.push(newPosition);
-  // if (trail.length > maxTrailSegments) trail.shift();
+  // iterate over each firework particle
+  for (let i = 0; i < 10; i++) {
+    const fireworkIndexX = Math.max(i-3, 0) * 3;
+    const fireworkIndexY = fireworkIndexX + 1;
+    const fireworkIndexZ = fireworkIndexX + 2;
 
-  // // Convert trail positions to a buffer
-  // const trailPositions = [];
-  // for (let i = 0; i < trail.length - 1; i++) {
-  //   trailPositions.push(...trail[i]);
-  // }
-  return trailPositions;
+    const fireworkX = fireworkPositions[fireworkIndexX];
+    const fireworkY = fireworkPositions[fireworkIndexY];
+    const fireworkZ = fireworkPositions[fireworkIndexZ];
+
+    // initialize positionHistory for this firework particle if it doesn't exist
+    if (!positionHistory[i]) {
+      positionHistory[i] = {
+        history: [],
+        currentIndex: 0,
+      };
+    }
+
+    const historyData = positionHistory[i];
+    const currentIndex = historyData.currentIndex;
+
+    // add new position to the history buffer (wrap around after reaching the history limit)
+    if (historyData.history.length < historyLimit) {
+      historyData.history.push([fireworkX, fireworkY, fireworkZ]);
+    } else {
+      historyData.history[currentIndex] = [fireworkX, fireworkY, fireworkZ];
+    }
+
+    // update the current index 
+    historyData.currentIndex = (currentIndex + 1) % historyLimit;
+
+    // update trail particles for this firework particle
+    for (let j = 0; j < historyLimit; j++) {
+      //const fireworkIndexX = Math.min(fireworkPositions.length - 1, Math.max(j - 3, 0) * 3);
+      //const fireworkIndexY = fireworkIndexX + 1;
+      //const fireworkIndexZ = fireworkIndexX + 2;
+
+      // calculate the correct index in the history buffer (wrapping around)
+      console.log("FIREWORKS X", fireworkIndexX);
+      console.log(fireworkPositions.length);
+      //histX = fireworkPositions[fireworkIndexX];
+      //histY = fireworkPositions[fireworkIndexY];
+      //histZ = fireworkPositions[fireworkIndexZ];
+
+      // assign positions from the history
+
+      const trailIndex = i * historyLimit + j; // calculate the index in the trail array
+
+      const trailIndexX = trailIndex * 3;
+      const trailIndexY = trailIndexX + 1;
+      const trailIndexZ = trailIndexX + 2;
+      console.log("TRAIL INDICES")
+      console.log(trailIndexX, fireworkIndexX);
+
+      trailPositions[trailIndexX] = fireworkX;
+      trailPositions[trailIndexY] = fireworkY;
+      trailPositions[trailIndexZ] = fireworkZ;
+    }
+  }
+
+  trailParticles.attributes.position.needsUpdate = true;
 }
