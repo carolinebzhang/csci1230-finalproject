@@ -21,7 +21,7 @@ let clock = new THREE.Clock();
 let curvePoints = [
   new THREE.Vector3(0, 50, 50),
   new THREE.Vector3(50, 100, 50),
-  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(0, 50, 0),
   new THREE.Vector3(-50, 100, -50),
 ];
 
@@ -37,8 +37,9 @@ let fireworkConfig = {
   },
 };
 
-let cameraPath,
-  cameraPathProgress = 0; // Camera path and progress
+//let cameraPath = new THREE.CatmullRomCurve3(curvePoints);
+let cameraPath;
+let cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
 // for GUI adjustments
 let cameraConfig = {
@@ -117,11 +118,7 @@ function setupGUI() {
   // add save image button
   gui.add({ save: saveSceneImage }, "save").name("Save Scene");
 
-  // add camera curve functionality
   // Add camera curve toggle
-  // gui
-  //   .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
-  //   .name("Camera Curve");
   gui
     .add(cameraConfig, "curveStatus")
     .name("Camera Curve Status")
@@ -139,15 +136,15 @@ function setupGUI() {
   }
 
   // add option to visualize the bezier curve only
-  gui
-    .add({ bezier: () => createCameraPath(false) }, "bezier")
-    .name("Visualize Bezier Curve");
+  // gui
+  //   .add({ bezier: () => createCameraPath(false) }, "bezier")
+  //   .name("Visualize Bezier Curve");
 
   // add option to toggle camera speed
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
-function createCameraPath(fullAnimation = true) {
+function createCameraPath(fullAnimation) {
   // visualize the Bézier curve by generating points along it
   const curvePointsArray = [];
   const numPoints = 100; // number of points to sample the curve
@@ -179,6 +176,9 @@ function createCameraPath(fullAnimation = true) {
       cameraProgress += cameraConfig.speed;
       if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
 
+      if (!cameraConfig.curveStatus) {
+        return;
+      }
       requestAnimationFrame(animateCamera);
     }
 
@@ -187,19 +187,12 @@ function createCameraPath(fullAnimation = true) {
 }
 
 function toggleCameraCurve(curveStatus) {
-  //if (!cameraPath) {
+  cameraConfig.curveStatus = curveStatus;
+
   if (curveStatus) {
+    cameraPathProgress = 0;
     createCameraPath(true);
-  } else {
   }
-  //}
-  // //cameraConfig.curveStatus = curveStatus;
-  // animateCameraCurve = curveStatus;
-  // cameraConfig.curveStatus = curveStatus;
-  // // reset progress if toggled on
-  // if (animateCameraCurve) {
-  //   cameraPathProgress = 0;
-  // }
 }
 
 function updateCameraPosition(delta) {
@@ -282,7 +275,7 @@ function animate() {
   fireworks.forEach((firework) => firework.update(delta));
 
   // update camera position if curve animation is active
-  //updateCameraPosition(delta);
+  updateCameraPosition(delta);
 
   // render the scene
   //renderer.render(scene, camera);

@@ -1,14 +1,13 @@
 import * as THREE from "three";
 import { hexToRGB } from "./utils.js";
 
-
 export function initializeParticles(
   particleCount,
   startX,
   startY,
   startZ,
   maxSpeed
-){
+) {
   const positions = [];
   const velocities = [];
   for (let i = 0; i < particleCount; i++) {
@@ -25,8 +24,6 @@ export function initializeParticles(
   }
   return { positions, velocities };
 }
-
-
 
 // function to initialize trail attributes
 export function initializeTrail(maxTrailParticles, startX, startY, startZ) {
@@ -127,24 +124,25 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
   for (let i = 0; i < particleCount; i++) {
     // update positions based on velocity
     if (elapsed <= lifetime * 0.2) {
-    let diff = (i) / particleCount;
+      let diff = i / particleCount;
 
-    const velocityFactor = (1 - diff); // bottom-most particles have higher velocity
-    if (positions[i * 3 + 1] > 60){
-      continue;
-    }
-    positions[i * 3] += velocities[i * 3] * 0.00002;
-    positions[i * 3 + 1] += (velocities[i * 3 + 1] * velocityFactor + 100) * delta;
-    positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.0006;
+      const velocityFactor = 1 - diff; // bottom-most particles have higher velocity
+      if (positions[i * 3 + 1] > 60) {
+        continue;
+      }
+      positions[i * 3] += velocities[i * 3] * 0.00002;
+      positions[i * 3 + 1] +=
+        (velocities[i * 3 + 1] * velocityFactor + 100) * delta;
+      positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.0006;
 
-    if (positions[i * 3 + 1] > maxHeightParticle.y) {
-      maxHeightParticle = {
-        x: positions[i * 3],
-        y: positions[i * 3 + 1],
-        z: positions[i * 3 + 2],
-      };
-    }
-    console.log(positions[i * 3 + 1]);
+      if (positions[i * 3 + 1] > maxHeightParticle.y) {
+        maxHeightParticle = {
+          x: positions[i * 3],
+          y: positions[i * 3 + 1],
+          z: positions[i * 3 + 2],
+        };
+      }
+      //console.log(positions[i * 3 + 1]);
     }
     // after initial upward motion, apply gravity and scatter particles
     if (elapsed > lifetime * 0.2) {
@@ -183,21 +181,19 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       const dy = positions[i * 3 + 1] - maxHeightParticle.y;
       const dz = positions[i * 3 + 2] - maxHeightParticle.z;
 
-
       // Calculate the distance from the center (radius)
       const distance = Math.sqrt(dx * dx + dz * dz);
 
       // calculate a random angle for the particle to follow a circular path
       const angle = (i / particleCount) * Math.PI * 2; // Evenly distribute particles along 360 degrees
 
-      
       const radius = 5; // fixed base radius for all particles
 
       const velocityFactor = distance / radius;
-      console.log("velocityFactor", velocityFactor
-      )
+      //console.log("velocityFactor", velocityFactor);
       // update particle positions to move in a circle based on angle and radius
-      positions[i * 3] += velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 2; // horizontal motion (X-axis)
+      positions[i * 3] +=
+        velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 2; // horizontal motion (X-axis)
       positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta; // gravity effect on Y-axis
       positions[i * 3 + 2] += Math.sin(angle) * radius * delta * 2; // depth motion (Z-axis)
 
@@ -206,7 +202,7 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       //  velocities[i * 3 + 2] * (0.0002 + elapsed * 0.007);
     }
   }
-  
+
   particles.attributes.position.needsUpdate = true;
 }
 
@@ -227,7 +223,7 @@ export function updateTrail(
 
   // iterate over each firework particle
   for (let i = 0; i < 10; i++) {
-    const fireworkIndexX = Math.max(i-3, 0) * 3;
+    const fireworkIndexX = Math.max(i - 3, 0) * 3;
     const fireworkIndexY = fireworkIndexX + 1;
     const fireworkIndexZ = fireworkIndexX + 2;
 
@@ -253,7 +249,7 @@ export function updateTrail(
       historyData.history[currentIndex] = [fireworkX, fireworkY, fireworkZ];
     }
 
-    // update the current index 
+    // update the current index
     historyData.currentIndex = (currentIndex + 1) % historyLimit;
 
     // update trail particles for this firework particle
