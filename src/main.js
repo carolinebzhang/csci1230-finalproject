@@ -27,15 +27,26 @@ let curvePoints = [
 
 let isPaused = false;
 // firework config for GUI controls
-let fireworkConfig = {
-  count: 10,
+let firework1Config = {
+  count: 5,
   color: "#ff0000", // default is red
   timing: 3,
   launchFireworks: function () {
-    launchFireworks(fireworkConfig);
+    launchFireworks(firework1Config);
     animate();
   },
 };
+
+// let firework2Config = {
+//   count: 5,
+//   color: "#8300ff",
+//   timing: 3,
+//   type1bool: false,
+//   launchFireworks: function () {
+//     launchFireworks(firework2Config);
+//     animate();
+//   },
+// };
 
 //let cameraPath = new THREE.CatmullRomCurve3(curvePoints);
 let cameraPath;
@@ -98,7 +109,7 @@ function init() {
   // create gui
   setupGUI();
 
-  launchFireworks(fireworkConfig);
+  launchFireworks(firework1Config);
 
   animate();
 }
@@ -107,10 +118,37 @@ function setupGUI() {
   const gui = new dat.GUI();
 
   // add controls to GUI
-  gui.add(fireworkConfig, "count", 1, 50).name("Firework Count").step(1);
-  gui.addColor(fireworkConfig, "color").name("Firework Color");
-  gui.add(fireworkConfig, "timing", 1, 10).name("Firework Timing").step(1);
-  gui.add(fireworkConfig, "launchFireworks").name("Launch Fireworks");
+  // first folder for scattered particle fireworks
+  const firework1Folder = gui.addFolder("Firework Type 1");
+  firework1Folder
+    .add(firework1Config, "count", 1, 50)
+    .name("Firework Count")
+    .step(1);
+  firework1Folder.addColor(firework1Config, "color").name("Firework Color");
+  firework1Folder
+    .add(firework1Config, "timing", 1, 10)
+    .name("Firework Timing")
+    .step(1);
+  firework1Folder.open();
+  firework1Folder
+    .add(firework1Config, "launchFireworks")
+    .name("Launch Fireworks");
+
+  // second folder for fireworks with streaks
+  // const firework2Folder = gui.addFolder("Firework Type 2");
+  // firework2Folder
+  //   .add(firework2Config, "count", 1, 50)
+  //   .name("Firework Count")
+  //   .step(1);
+  // firework2Folder.addColor(firework2Config, "color").name("Firework Color");
+  // firework2Folder
+  //   .add(firework2Config, "timing", 1, 10)
+  //   .name("Firework Timing")
+  //   .step(1);
+  // firework2Folder.open();
+  // firework2Folder
+  //   .add(firework2Config, "launchFireworks")
+  //   .name("Launch Fireworks");
 
   // add pause/resume button
   gui.add({ pause: togglePause }, "pause").name("Pause/Resume");
@@ -187,8 +225,6 @@ function createCameraPath(fullAnimation) {
 }
 
 function toggleCameraCurve(curveStatus) {
-  cameraConfig.curveStatus = curveStatus;
-
   if (curveStatus) {
     cameraPathProgress = 0;
     createCameraPath(true);
@@ -260,6 +296,15 @@ function launchFireworks(config) {
     const firework = createFirework(scene, config.color, config.timing);
     fireworks.push(firework);
   }
+  // for (let i = 0; i < config.count2; i++) {
+  //   const firework2 = createFirework(
+  //     scene,
+  //     config.color2,
+  //     config.timing2,
+  //     false
+  //   );
+  //   fireworks.push(firework2);
+  // }
   console.log("IN FIREWORKS");
   console.log(fireworks);
 }

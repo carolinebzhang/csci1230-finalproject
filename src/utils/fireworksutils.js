@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { hexToRGB } from "./utils.js";
+import { mod } from "three/webgpu";
 
 export function initializeParticles(
   particleCount,
@@ -34,6 +35,21 @@ export function initializeTrail(maxTrailParticles, startX, startY, startZ) {
     trailVelocities.push(0, 0, 0);
   }
   return { trailPositions, trailVelocities };
+}
+
+export function initializeStreaks(
+  numStreakLayers,
+  particleCount,
+  startX,
+  startY,
+  startZ
+) {
+  let streakPositions = [];
+  // arranged by particle count per streak layer
+  for (let i = 0; i < numStreakLayers * particleCount; i++) {
+    streakPositions.push(startX, startY, startZ);
+  }
+  return streakPositions;
 }
 
 // function to create particle texture
@@ -79,6 +95,18 @@ export function createParticleMaterial(texture) {
   });
 }
 
+// function to create particle material
+export function createStreakMaterial(texture) {
+  return new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 1.8,
+    transparent: true,
+    opacity: 0,
+    map: texture,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
 // function to create trail material
 export function createTrailMaterial(color) {
   return new THREE.ShaderMaterial({
@@ -107,8 +135,53 @@ export function createTrailMaterial(color) {
   });
 }
 
+export function updateStreaks(
+  streakParticles,
+  numParticles,
+  tempPositions,
+  streakBuffer,
+  streakMaterial
+) {
+  const streakPositions = streakParticles.attributes.position.array;
+  let streakCount = streakPositions.length / (3 * numParticles);
+  let updatedBuffer = streakBuffer;
+
+  for (let i = 0; i < streakCount; i++) {
+    updatedBuffer -= 2;
+    for (let j = 0; j < numParticles; j++) {
+      // update streak position with previous particle position
+      if (updatedBuffer - 1 >= 0) {
+        const index = i * streakCount + j;
+        //console.log(index);
+        const tempPosition = tempPositions[updatedBuffer - 1];
+
+        streakPositions[index * 3] = tempPosition[j * 3];
+        streakPositions[index * 3 + 1] = tempPosition[j * 3 + 1];
+        streakPositions[index * 3 + 2] = tempPosition[j * 3 + 2];
+      }
+    }
+    // toggling opacity on once particles reach certain height
+    if (streakMaterial.opacity == 0) {
+      streakMaterial.opacity = 1;
+    }
+
+    // fading particle opacity and size
+    if (streakMaterial.opacity > 0.1) {
+      streakMaterial.opacity -= Math.pow(0.005, i + 1);
+    }
+    if (streakMaterial.size > 0.5) {
+      streakMaterial.opacity -= Math.pow(0.0005, i + 1);
+    }
+
+    streakMaterial.needsUpdate = true;
+  }
+
+  streakParticles.attributes.position.needsUpdate = true;
+}
+
 // function to update particles' position and velocity
 export function updateParticles(particles, delta, elapsed, lifetime) {
+  // creating tails
   const positions = particles.attributes.position.array;
   const velocities = particles.attributes.velocity.array;
 
@@ -121,6 +194,9 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
 
   //let velocityScaleFactor = 1.0;
 
+  // returned to keep track of previous positions
+  let tempPositions = [];
+
   for (let i = 0; i < particleCount; i++) {
     // update positions based on velocity
     if (elapsed <= lifetime * 0.2) {
@@ -130,6 +206,7 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       if (positions[i * 3 + 1] > 60) {
         continue;
       }
+
       positions[i * 3] += velocities[i * 3] * 0.00002;
       positions[i * 3 + 1] +=
         (velocities[i * 3 + 1] * velocityFactor + 100) * delta;
@@ -164,18 +241,6 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
         velocities[i * 3 + 1] *= 0.9; // slow down upward motion
       }
 
-      // // update positions based on velocity
-      // positions[i * 3] +=
-      //   velocities[i * 3] * delta * 2 * Math.abs(Math.cos(elapsed)); // horizontal (X-axis)
-      // positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta * 2; // gravity on Y-axis
-      // positions[i * 3 + 2] +=
-      //   velocities[i * 3 + 2] * delta * Math.abs(Math.sin(elapsed)); // depth motion (Z-axis)
-
-      // // make the particles more spread out
-      // positions[i * 3] += velocities[i * 3] * (0.0002 + elapsed * 0.007);
-      // positions[i * 3 + 2] +=
-      //   velocities[i * 3 + 2] * (0.0002 + elapsed * 0.007);
-
       // Calculate the distance of each particle from the center of the circle (maxHeightParticle)
       const dx = positions[i * 3] - maxHeightParticle.x;
       const dy = positions[i * 3 + 1] - maxHeightParticle.y;
@@ -186,24 +251,31 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
 
       // calculate a random angle for the particle to follow a circular path
       const angle = (i / particleCount) * Math.PI * 2; // Evenly distribute particles along 360 degrees
+      //const angle = angleList[Math.floor(Math.random(numStreaks - 1))];
 
       const radius = 5; // fixed base radius for all particles
 
       const velocityFactor = distance / radius;
       //console.log("velocityFactor", velocityFactor);
+
       // update particle positions to move in a circle based on angle and radius
       positions[i * 3] +=
         velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 2; // horizontal motion (X-axis)
       positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta; // gravity effect on Y-axis
       positions[i * 3 + 2] += Math.sin(angle) * radius * delta * 2; // depth motion (Z-axis)
-
-      //positions[i * 3] += velocities[i * 3] * (0.0002 + elapsed * 0.007);
-      //positions[i * 3 + 2] +=
-      //  velocities[i * 3 + 2] * (0.0002 + elapsed * 0.007);
     }
+
+    // updating array keeping track of previous positions
+    tempPositions.push(
+      positions[i * 3],
+      positions[i * 3 + 1],
+      positions[i * 3 + 2]
+    );
   }
 
   particles.attributes.position.needsUpdate = true;
+
+  return tempPositions;
 }
 
 export function updateTrail(
@@ -254,19 +326,6 @@ export function updateTrail(
 
     // update trail particles for this firework particle
     for (let j = 0; j < historyLimit; j++) {
-      //const fireworkIndexX = Math.min(fireworkPositions.length - 1, Math.max(j - 3, 0) * 3);
-      //const fireworkIndexY = fireworkIndexX + 1;
-      //const fireworkIndexZ = fireworkIndexX + 2;
-
-      // calculate the correct index in the history buffer (wrapping around)
-      //console.log("FIREWORKS X", fireworkIndexX);
-      //console.log(fireworkPositions.length);
-      //histX = fireworkPositions[fireworkIndexX];
-      //histY = fireworkPositions[fireworkIndexY];
-      //histZ = fireworkPositions[fireworkIndexZ];
-
-      // assign positions from the history
-
       const trailIndex = i * historyLimit + j; // calculate the index in the trail array
 
       const trailIndexX = trailIndex * 3;
