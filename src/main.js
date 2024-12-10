@@ -10,66 +10,53 @@ import { createBloomEffect } from "./utils/visualeffects.js";
 import * as dat from "dat.gui";
 
 let scene,
- water,
+  water,
   camera,
   renderer,
   fireworks = [];
 
-
 let clock = new THREE.Clock();
 
 // define control points for the Bezier curve
-// incorporate this into gui?
-const curvePoints0 = {
-  name: "OFF",
-  points: [],
-};
-const curvePoints1 = {
-  name: "Bezier Curve 1",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(50, 100, 50),
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(-50, 100, -50),
-  ],
-};
-const curvePoints2 = {
-  name: "Bezier Curve 2",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(50, 100, 50),
-    new THREE.Vector3(50, 100, 100),
-    new THREE.Vector3(100, 100, 100),
-  ],
-};
-const curvePoints3 = {
-  name: "Bezier Curve 3",
-  points: [
-    new THREE.Vector3(0, 50, 50),
-    new THREE.Vector3(-50, 100, 50),
-    new THREE.Vector3(50, 100, 100),
-    new THREE.Vector3(100, 100, 100),
-  ],
-};
-let cameraCurveList = [curvePoints0, curvePoints1, curvePoints2, curvePoints3];
+let curvePoints = [
+  new THREE.Vector3(0, 50, 50),
+  new THREE.Vector3(50, 100, 50),
+  new THREE.Vector3(0, 50, 0),
+  new THREE.Vector3(-50, 100, -50),
+];
 
 let isPaused = false;
 // firework config for GUI controls
-let fireworkConfig = {
-  count: 10,
+let firework1Config = {
+  count: 5,
   color: "#ff0000", // default is red
   timing: 3,
   launchFireworks: function () {
-    launchFireworks(fireworkConfig);
+    launchFireworks(firework1Config);
     animate();
   },
 };
 
-let cameraPath,
-  cameraPathProgress = 0; // Camera path and progress
+// let firework2Config = {
+//   count: 5,
+//   color: "#8300ff",
+//   timing: 3,
+//   type1bool: false,
+//   launchFireworks: function () {
+//     launchFireworks(firework2Config);
+//     animate();
+//   },
+// };
+
+//let cameraPath = new THREE.CatmullRomCurve3(curvePoints);
+let cameraPath;
+let cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
-let cameraCurveStatus = { name: "OFF", points: [] };
-let cameraSpeed = { speed: 0.005 }; // adjust to control camera speed
+// for GUI adjustments
+let cameraConfig = {
+  curveStatus: false,
+  speed: 0.005,
+};
 let composer;
 function init() {
   console.log("Main.js is running");
@@ -81,9 +68,7 @@ function init() {
 
   scene = new THREE.Scene();
   // set the scene's background to the dark clouds texture
-  scene.background = new THREE.TextureLoader().load(
-    "PLACEHOLDER"
-  );
+  scene.background = new THREE.TextureLoader().load("PLACEHOLDER");
 
   // set up camera
   camera = new THREE.PerspectiveCamera(
@@ -96,13 +81,10 @@ function init() {
 
   // set up renderer
   renderer = new THREE.WebGLRenderer();
-  
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.getElementById("canvas-container").appendChild(renderer.domElement);
-
-
-
 
   // set up orbit controls
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -114,8 +96,6 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(100, 200, 100);
   directionalLight.target.position.set(0, 0, 0);
-
-  
 
   scene.add(directionalLight);
   scene.add(directionalLight.target);
@@ -129,7 +109,7 @@ function init() {
   // create gui
   setupGUI();
 
-  launchFireworks(fireworkConfig);
+  launchFireworks(firework1Config);
 
   animate();
 }
@@ -138,10 +118,37 @@ function setupGUI() {
   const gui = new dat.GUI();
 
   // add controls to GUI
-  gui.add(fireworkConfig, "count", 1, 50).name("Firework Count").step(1);
-  gui.addColor(fireworkConfig, "color").name("Firework Color");
-  gui.add(fireworkConfig, "timing", 1, 10).name("Firework Timing").step(1);
-  gui.add(fireworkConfig, "launchFireworks").name("Launch Fireworks");
+  // first folder for scattered particle fireworks
+  const firework1Folder = gui.addFolder("Firework Type 1");
+  firework1Folder
+    .add(firework1Config, "count", 1, 50)
+    .name("Firework Count")
+    .step(1);
+  firework1Folder.addColor(firework1Config, "color").name("Firework Color");
+  firework1Folder
+    .add(firework1Config, "timing", 1, 10)
+    .name("Firework Timing")
+    .step(1);
+  firework1Folder.open();
+  firework1Folder
+    .add(firework1Config, "launchFireworks")
+    .name("Launch Fireworks");
+
+  // second folder for fireworks with streaks
+  // const firework2Folder = gui.addFolder("Firework Type 2");
+  // firework2Folder
+  //   .add(firework2Config, "count", 1, 50)
+  //   .name("Firework Count")
+  //   .step(1);
+  // firework2Folder.addColor(firework2Config, "color").name("Firework Color");
+  // firework2Folder
+  //   .add(firework2Config, "timing", 1, 10)
+  //   .name("Firework Timing")
+  //   .step(1);
+  // firework2Folder.open();
+  // firework2Folder
+  //   .add(firework2Config, "launchFireworks")
+  //   .name("Launch Fireworks");
 
   // add pause/resume button
   gui.add({ pause: togglePause }, "pause").name("Pause/Resume");
@@ -149,44 +156,40 @@ function setupGUI() {
   // add save image button
   gui.add({ save: saveSceneImage }, "save").name("Save Scene");
 
-  // add camera curve functionality
   // Add camera curve toggle
-  // gui
-  //   .add({ cameraCurve: toggleCameraCurve }, "cameraCurve")
-  //   .name("Camera Curve");
-  // gui.add(cameraCurveStatus, "status").name("Camera Curve Status").listen();
-
-  // gives multiple bezier curve options
   gui
-    .add(cameraCurveStatus, "name", [
-      curvePoints0.name,
-      curvePoints1.name,
-      curvePoints2.name,
-      curvePoints3.name,
-    ])
-    .setValue(curvePoints0.name)
-    .name("Camera Curve")
+    .add(cameraConfig, "curveStatus")
+    .name("Camera Curve Status")
     .onChange(function (value) {
       toggleCameraCurve(value);
     });
 
+  // allows user to adjust bezier curve
+  const bezierFolder = gui.addFolder("Adjust Camera Curve");
+  for (let i = 0; i < 4; i++) {
+    const bezierPointFolder = bezierFolder.addFolder("Bezier Point " + (i + 1));
+    bezierPointFolder.add(curvePoints[i], "x", -100, 100).name("X").step(1);
+    bezierPointFolder.add(curvePoints[i], "y", -100, 100).name("Y").step(1);
+    bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
+  }
+
   // add option to visualize the bezier curve only
-  gui
-    .add({ bezier: () => createCameraPath(false) }, "bezier")
-    .name("Visualize Bezier Curve");
+  // gui
+  //   .add({ bezier: () => createCameraPath(false) }, "bezier")
+  //   .name("Visualize Bezier Curve");
 
   // add option to toggle camera speed
-  gui.add(cameraSpeed, "speed", 0, 0.01).name("Camera Speed").step(0.001);
+  gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
-function createCameraPath(fullAnimation = true) {
+function createCameraPath(fullAnimation) {
   // visualize the Bézier curve by generating points along it
   const curvePointsArray = [];
   const numPoints = 100; // number of points to sample the curve
 
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints; // normalized parameter (t) from 0 to 1
-    const pointOnCurve = cubicBezier(t, ...cameraCurveStatus.points);
+    const pointOnCurve = cubicBezier(t, ...curvePoints);
     curvePointsArray.push(pointOnCurve);
   }
 
@@ -204,15 +207,16 @@ function createCameraPath(fullAnimation = true) {
 
     function animateCamera() {
       // update the camera position based on the progress along the curve
-      camera.position.copy(
-        cubicBezier(cameraProgress, ...cameraCurveStatus.points)
-      );
+      camera.position.copy(cubicBezier(cameraProgress, ...curvePoints));
       camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
 
       // increment the progress for animation
-      cameraProgress += cameraSpeed.speed;
+      cameraProgress += cameraConfig.speed;
       if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
 
+      if (!cameraConfig.curveStatus) {
+        return;
+      }
       requestAnimationFrame(animateCamera);
     }
 
@@ -220,23 +224,11 @@ function createCameraPath(fullAnimation = true) {
   }
 }
 
-function toggleCameraCurve(curveName) {
-  cameraCurveStatus.points = cameraCurveList.find(
-    (curve) => curve.name == curveName
-  ).points;
-
-  if (!cameraPath && curveName != "OFF") {
+function toggleCameraCurve(curveStatus) {
+  if (curveStatus) {
+    cameraPathProgress = 0;
     createCameraPath(true);
-    animateCameraCurve = true;
-    cameraPathProgress = 0; // reset progress if toggled on
-  } else {
-    animateCameraCurve = false;
   }
-
-  // reset progress if toggled on
-  // if (animateCameraCurve) {
-  //   cameraPathProgress = 0;
-  // }
 }
 
 function updateCameraPosition(delta) {
@@ -304,6 +296,15 @@ function launchFireworks(config) {
     const firework = createFirework(scene, config.color, config.timing);
     fireworks.push(firework);
   }
+  // for (let i = 0; i < config.count2; i++) {
+  //   const firework2 = createFirework(
+  //     scene,
+  //     config.color2,
+  //     config.timing2,
+  //     false
+  //   );
+  //   fireworks.push(firework2);
+  // }
   console.log("IN FIREWORKS");
   console.log(fireworks);
 }
