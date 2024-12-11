@@ -13,7 +13,7 @@ export function createTerrain(scene, camera, renderer) {
 
   // Create the material with reduced reflectivity
   const material = new THREE.MeshStandardMaterial({
-    color: "#222222", // Base color
+    color: "#474747", // Base color
     roughness: 0.8, // Increase roughness to make it less reflective
     metalness: 0.0, // Decrease metalness to reduce reflectivity
     normalMap: normalMap, // Add bumps using the normal map
