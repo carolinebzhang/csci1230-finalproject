@@ -283,12 +283,15 @@ function saveSceneImage() {
 
 function launchFireworks(config) {
   // clear setting
-  fireworks.forEach((firework) => {
-    if (firework && firework.destroy) {
-      firework.destroy(scene);
-    }
-  });
-  console.log("FIREWORKS BEING LAUNCHED");
+  if (fireworks && Array.isArray(fireworks)) {
+    fireworks.forEach((firework) => {
+      if (firework && firework.destroy) {
+        firework.destroy(scene); // Call destroy method to clean up
+      }
+    });
+  }
+
+  //resetFireworkState();
   fireworks = [];
 
   // create fireworks based on config

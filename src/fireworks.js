@@ -1,17 +1,33 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
 import { hexToRGB } from "./utils/utils.js";
+// import {
+//   initializeParticles,
+//   initializeTrail,
+//   initializeStreaks,
+//   createParticleTexture,
+//   createParticleMaterial,
+//   createTrailMaterial,
+//   createStreakMaterial,
+//   updateParticles,
+//   updateTrail,
+//   updateStreaks,
+// } from "./utils/fireworksutils.js";
+
 import {
   initializeParticles,
-  initializeTrail,
-  initializeStreaks,
   createParticleTexture,
   createParticleMaterial,
-  createTrailMaterial,
-  createStreakMaterial,
   updateParticles,
-  updateTrail,
+} from "./utils/fireworkparticles.js";
+
+import {
+  //initializeTrail,
+  initializeStreaks,
+  //createTrailMaterial,
+  createStreakMaterial,
+  //updateTrail,
   updateStreaks,
-} from "./utils/fireworksutils.js";
+} from "./utils/fireworktrails.js";
 
 // Main function to create the firework
 export function createFirework(scene, color, duration) {
@@ -32,12 +48,6 @@ export function createFirework(scene, color, duration) {
     startZ,
     maxSpeed
   );
-  const { trailPositions, trailVelocities } = initializeTrail(
-    maxTrailParticles,
-    startX,
-    startY,
-    startZ
-  );
 
   const particles = new THREE.BufferGeometry();
   particles.setAttribute(
@@ -49,15 +59,7 @@ export function createFirework(scene, color, duration) {
     new THREE.Float32BufferAttribute(velocities, 3)
   );
 
-  const trailParticles = new THREE.BufferGeometry();
-  trailParticles.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(trailPositions, 3)
-  );
-  trailParticles.setAttribute(
-    "velocity",
-    new THREE.Float32BufferAttribute(trailVelocities, 3)
-  );
+  
 
   const texture = createParticleTexture(color);
   const particleMaterial = createParticleMaterial(texture);
@@ -65,10 +67,10 @@ export function createFirework(scene, color, duration) {
   scene.add(firework);
 
   //const trailMaterial = createTrailMaterial(color);
-  const trailTexture = createParticleTexture(color);
-  const trailMaterial = createParticleMaterial(trailTexture);
-  const trail = new THREE.Points(trailParticles, trailMaterial);
-  scene.add(trail);
+  // const trailTexture = createParticleTexture(color);
+  // const trailMaterial = createParticleMaterial(trailTexture);
+  // const trail = new THREE.Points(trailParticles, trailMaterial);
+  // scene.add(trail);
 
   // let streaks = null;
   // let streakParticles = null;
@@ -119,32 +121,44 @@ export function createFirework(scene, color, duration) {
       //updateTrail(trail, trailGeometry, trailPositions, elapsed, duration);
       const positionHistory = [];
       const historyLimit = 10;
-      updateTrail(
-        trailParticles,
-        particles,
-        delta,
-        elapsed,
-        duration,
-        positionHistory,
-        historyLimit
-        //startX,
-        //startY,
-        //startZ
-      );
+
     }
   }
 
   function destroy(scene) {
+
     scene.remove(firework);
-    scene.remove(trail);
+    //scene.remove(trail);
     scene.remove(streaks);
-    particles.dispose();
-    particleMaterial.dispose();
-    trailParticles.dispose();
-    trailMaterial.dispose();
-    streakParticles.dispose();
-    streakMaterial.dispose();
+
+    // Dispose of geometry and material
+    if (firework.geometry) {
+      firework.geometry.dispose(); // Dispose geometry
+    }
+    if (firework.material) {
+      // Reset material properties before disposing
+      firework.material.opacity = 1; // Reset opacity
+      firework.material.size = 1; // Reset size if needed
+      firework.material.dispose(); // Dispose material
+    }
+  
+
+  if (streaks) {
+    scene.remove(streaks);
+
+    if (streaks.geometry) {
+      streaks.geometry.dispose();
+    }
+    if (streaks.material) {
+      streaks.material.opacity = 1; // Reset opacity
+      streaks.material.dispose();
+    }
   }
+
+  console.log("Firework, trail, and streaks destroyed and reset.");
+}
+
+
 
   return { update, destroy };
 }

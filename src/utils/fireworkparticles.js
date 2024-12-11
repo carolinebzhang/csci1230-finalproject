@@ -26,31 +26,6 @@ export function initializeParticles(
   return { positions, velocities };
 }
 
-// function to initialize trail attributes
-export function initializeTrail(maxTrailParticles, startX, startY, startZ) {
-  let trailPositions = [];
-  let trailVelocities = [];
-  for (let i = 0; i < maxTrailParticles; i++) {
-    trailPositions.push(startX, startY, startZ);
-    trailVelocities.push(0, 0, 0);
-  }
-  return { trailPositions, trailVelocities };
-}
-
-export function initializeStreaks(
-  numStreakLayers,
-  particleCount,
-  startX,
-  startY,
-  startZ
-) {
-  let streakPositions = [];
-  // arranged by particle count per streak layer
-  for (let i = 0; i < numStreakLayers * particleCount; i++) {
-    streakPositions.push(startX, startY, startZ);
-  }
-  return streakPositions;
-}
 
 // function to create particle texture
 export function createParticleTexture(color) {
@@ -80,9 +55,9 @@ export function createParticleTexture(color) {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
-  texture.premultiplyAlpha = true;
   return texture;
 }
+
 
 // function to create particle material
 export function createParticleMaterial(texture) {
@@ -96,89 +71,7 @@ export function createParticleMaterial(texture) {
   });
 }
 
-// function to create particle material
-export function createStreakMaterial(texture) {
-  return new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 1.8,
-    transparent: true,
-    opacity: 1,
-    map: texture,
-    blending: THREE.AdditiveBlending,
-  });
-}
 
-// function to create trail material
-export function createTrailMaterial(color) {
-  return new THREE.ShaderMaterial({
-    uniforms: {
-      color1: { value: new THREE.Color(color) },
-      color2: { value: new THREE.Color("black") },
-      opacity: { value: 1.0 },
-    },
-    vertexShader: `
-      varying float vOpacity;
-      void main() {
-        vOpacity = position.y / 100.0;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 color1;
-      uniform vec3 color2;
-      varying float vOpacity;
-      void main() {
-        gl_FragColor = vec4(mix(color2, color1, vOpacity), vOpacity);
-      }
-    `,
-    transparent: false,
-    blending: THREE.AdditiveBlending,
-  });
-}
-
-export function updateStreaks(
-  streakParticles,
-  numParticles,
-  tempPositions,
-  streakBuffer,
-  streakMaterial
-) {
-  const streakPositions = streakParticles.attributes.position.array;
-  let streakCount = streakPositions.length / (3 * numParticles);
-  let updatedBuffer = streakBuffer;
-
-  for (let i = 0; i < streakCount; i++) {
-    updatedBuffer -= 2;
-    for (let j = 0; j < numParticles; j++) {
-      // update streak position with previous particle position
-      if (updatedBuffer - 1 >= 0) {
-        const index = i * streakCount + j;
-        //console.log(index);
-        const tempPosition = tempPositions[updatedBuffer - 1];
-
-        streakPositions[index * 3] = tempPosition[j * 3];
-        streakPositions[index * 3 + 1] = tempPosition[j * 3 + 1];
-        streakPositions[index * 3 + 2] = tempPosition[j * 3 + 2];
-      }
-    }
-    // toggling opacity on once particles reach certain height
-    if (streakMaterial.opacity == 0) {
-      streakMaterial.opacity = 1;
-    }
-
-    // fading particle opacity and size
-    if (streakMaterial.opacity > 0.1) {
-      streakMaterial.opacity -= Math.pow(0.005, i + 1);
-    }
-    if (streakMaterial.size > 0.5) {
-      streakMaterial.opacity -= Math.pow(0.0005, i + 1);
-    }
-
-    streakMaterial.needsUpdate = true;
-  }
-
-  streakParticles.attributes.position.needsUpdate = true;
-}
 
 // function to update particles' position and velocity
 export function updateParticles(particles, delta, elapsed, lifetime) {
@@ -277,69 +170,4 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
   particles.attributes.position.needsUpdate = true;
 
   return tempPositions;
-}
-
-export function updateTrail(
-  trailParticles,
-  fireworkParticles,
-  delta,
-  elapsed,
-  lifetime,
-  positionHistory,
-  historyLimit
-) {
-  const trailPositions = trailParticles.attributes.position.array;
-  const fireworkPositions = fireworkParticles.attributes.position.array;
-
-  const trailCount = trailParticles.count;
-  const segmentsPerTrail = trailCount / fireworkParticles.count;
-
-  // iterate over each firework particle
-  for (let i = 0; i < 10; i++) {
-    const fireworkIndexX = Math.max(i - 3, 0) * 3;
-    const fireworkIndexY = fireworkIndexX + 1;
-    const fireworkIndexZ = fireworkIndexX + 2;
-
-    const fireworkX = fireworkPositions[fireworkIndexX];
-    const fireworkY = fireworkPositions[fireworkIndexY];
-    const fireworkZ = fireworkPositions[fireworkIndexZ];
-
-    // initialize positionHistory for this firework particle if it doesn't exist
-    if (!positionHistory[i]) {
-      positionHistory[i] = {
-        history: [],
-        currentIndex: 0,
-      };
-    }
-
-    const historyData = positionHistory[i];
-    const currentIndex = historyData.currentIndex;
-
-    // add new position to the history buffer (wrap around after reaching the history limit)
-    if (historyData.history.length < historyLimit) {
-      historyData.history.push([fireworkX, fireworkY, fireworkZ]);
-    } else {
-      historyData.history[currentIndex] = [fireworkX, fireworkY, fireworkZ];
-    }
-
-    // update the current index
-    historyData.currentIndex = (currentIndex + 1) % historyLimit;
-
-    // update trail particles for this firework particle
-    for (let j = 0; j < historyLimit; j++) {
-      const trailIndex = i * historyLimit + j; // calculate the index in the trail array
-
-      const trailIndexX = trailIndex * 3;
-      const trailIndexY = trailIndexX + 1;
-      const trailIndexZ = trailIndexX + 2;
-      //console.log("TRAIL INDICES")
-      //console.log(trailIndexX, fireworkIndexX);
-
-      trailPositions[trailIndexX] = fireworkX;
-      trailPositions[trailIndexY] = fireworkY;
-      trailPositions[trailIndexZ] = fireworkZ;
-    }
-  }
-
-  trailParticles.attributes.position.needsUpdate = true;
 }
