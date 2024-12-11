@@ -103,6 +103,10 @@ function setupGUI() {
     bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
   }
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
+
+  gui
+    .add({ clearFireworks: clearFireworks }, "clearFireworks")
+    .name("Clear Fireworks");
 }
 
 function createCameraPath() {
@@ -121,8 +125,6 @@ function createCameraPath() {
     curvePointsArray
   );
   const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-  const curveLine = new THREE.Line(curveGeometry, curveMaterial);
-  scene.add(curveLine); // add the curve to the scene for visualization
     let cameraProgress = 0;
 
     function animateCamera() {
@@ -267,7 +269,7 @@ function showPopUpMenu(x, y, position) {
     const radius = 1;
     const segments = 32; 
     const circleGeometry = new THREE.CircleGeometry(radius, segments);
-    const material = new THREE.LineBasicMaterial({ color: 0x0000ff }); 
+    const material = new THREE.LineBasicMaterial({ color: colorInput.value }); 
     const circleMarker = new THREE.LineLoop(circleGeometry, material);
     circleMarker.position.set(position.x, position.y, position.z);
     scene.add(circleMarker);
@@ -307,6 +309,30 @@ function animate() {
     composer = createBloomEffect(scene, camera, renderer);
   }
   composer.render();
+}
+
+function clearFireworks() {
+  // Clear the fireworkConfigs array
+  fireworkConfigs = [];
+
+  // Remove all objects from the scene except essential ones
+  for (let i = scene.children.length - 1; i >= 0; i--) {
+    const obj = scene.children[i];
+    // Retain lights, camera, water, and terrain
+    if (
+      !(
+        obj.isLight ||
+        obj === camera ||
+        obj === water ||
+        obj.userData.isTerrain
+      )
+    ) {
+      scene.remove(obj);
+    }
+  }
+
+  // Clear fireworks array
+  fireworks = [];
 }
 
 window.addEventListener("resize", () => {

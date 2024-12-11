@@ -88,9 +88,9 @@ export function createParticleTexture(color) {
 // function to create particle material
 export function createParticleMaterial(texture) {
   return new THREE.PointsMaterial({
-    color: 0xffffff,
+    color: 0xffffff, 
     size: 2,
-    transparent: true,
+    transparent: false,
     opacity: 1,
     map: texture,
     blending: THREE.AdditiveBlending,

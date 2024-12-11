@@ -16,8 +16,8 @@ export function createBloomEffect(scene, camera, renderer) {
   // unrealBloomPass is the pass that applies the bloom effect
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight), 
-    2.5,  // bloom strength
-    0.8,  // bloom radius (spread)
+    4.5,  // bloom strength
+    1.2,  // bloom radius (spread)
     0.55  // bloom threshold (minimum brightness for bloom)
   );
   composer.addPass(bloomPass);
