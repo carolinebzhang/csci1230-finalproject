@@ -8,11 +8,9 @@ import { createBloomEffect } from "./utils/visualeffects.js";
 import * as dat from "dat.gui";
 
 let scene,
-  water,
   camera,
   renderer,
   fireworks = [];
-
 
 let clock = new THREE.Clock();
 
@@ -111,9 +109,10 @@ function setupGUI() {
   }
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 
-  gui
-    .add({ togglePlacementMode: togglePlacementMode }, "togglePlacementMode")
-    .name(() => `Placement Mode: ${placementMode ? "ON" : "OFF"}`); 
+gui
+  .add({ togglePlacementMode: togglePlacementMode }, "togglePlacementMode")
+  .name("Placement Mode");
+  
 
   gui
     .add({ clearFireworks: clearFireworks }, "clearFireworks")
@@ -162,11 +161,9 @@ function createCameraPath() {
   }
 
 
-
 function toggleCameraCurve(curveStatus) {
   if (curveStatus) {
     cameraPathProgress = 0;
-    //createCameraPath();
   }
 }
 
@@ -310,7 +307,6 @@ delayInput.addEventListener("input", () => {
 
 });
 
-
   // confirm button
   const confirmButton = document.createElement("button");
   confirmButton.textContent = "Add Firework";
@@ -342,7 +338,7 @@ delayInput.addEventListener("input", () => {
 
   const quitButton = document.createElement("button");
   quitButton.textContent = "Quit";
-  quitButton.style.marginLeft = "10px"; // optional: add spacing between buttons
+  quitButton.style.marginLeft = "10px"; 
   quitButton.onclick = () => {
     popUpMenu.remove(); // remove the popup menu from the DOM
     popUpMenu = null; // clean up reference

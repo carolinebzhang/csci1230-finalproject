@@ -113,7 +113,6 @@ export function updateParticles(particles, fireworkType, delta, elapsed, lifetim
     // update positions based on velocity
     if (elapsed <= lifetime * 0.2) {
       let diff = i / particleCount;
-
       const velocityFactor = 1 - diff; // bottom-most particles have higher velocity
       if (positions[i * 3 + 1] > 60) {
         continue;
@@ -147,7 +146,6 @@ export function updateParticles(particles, fireworkType, delta, elapsed, lifetim
       if (Math.abs(velocities[i * 3 + 1]) < 5) {
         velocities[i * 3 + 1] *= 0.9; // slow down upward motion
       }
-
       // Calculate the distance from the center (radius)
       const angle = (i / particleCount) * Math.PI * 2; // Evenly distribute particles along 360 degrees
       let radius = 5; // fixed base radius for all particles
@@ -214,13 +212,10 @@ export function updateParticles(particles, fireworkType, delta, elapsed, lifetim
         const angle = (i / particleCount) * Math.PI * 2; 
 
         const radius = 5; 
-        
         positions[i * 3 + 1] +=
           velocities[i * 3 + 1] * delta * Math.sin(angle) - 9.8 * delta * 0.5; 
         positions[i * 3] +=
           velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 5; 
-        
-        
     }
   }
     // updating array keeping track of previous positions
