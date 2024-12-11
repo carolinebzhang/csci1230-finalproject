@@ -1,17 +1,6 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
 import { hexToRGB } from "./utils/utils.js";
-// import {
-//   initializeParticles,
-//   initializeTrail,
-//   initializeStreaks,
-//   createParticleTexture,
-//   createParticleMaterial,
-//   createTrailMaterial,
-//   createStreakMaterial,
-//   updateParticles,
-//   updateTrail,
-//   updateStreaks,
-// } from "./utils/fireworksutils.js";
+
 
 import {
   initializeParticles,
@@ -29,17 +18,25 @@ import {
   updateStreaks,
 } from "./utils/fireworktrails.js";
 
+
 // Main function to create the firework
-export function createFirework(scene, color, duration) {
+export function createFirework(scene, color, duration, starting) {
   const particleCount = 50;
   const maxTrailParticles = 10;
   const maxSpeed = 50;
   const bounds = { x: 200, y: 200, z: 200 };
   const numStreakLayers = 22;
 
-  const startX = Math.random() * bounds.x - bounds.x / 2;
-  const startY = 0;
-  const startZ = Math.random() * bounds.z - bounds.z / 2;
+  console.log(starting);
+  
+  
+    const startX = Number((Math.round(starting["x"])))
+    const startY = Number((Math.round(starting["y"])))
+    const startZ = Number((Math.round(starting["z"])))
+
+    console.log("TYPE", (typeof(startX)));
+    console.log(starting["z"]);
+    console.log("TYPE,", Number(Math.abs(Math.round(starting["z"]))));
 
   const { positions, velocities } = initializeParticles(
     particleCount,
@@ -48,6 +45,7 @@ export function createFirework(scene, color, duration) {
     startZ,
     maxSpeed
   );
+
 
   const particles = new THREE.BufferGeometry();
   particles.setAttribute(
@@ -66,16 +64,6 @@ export function createFirework(scene, color, duration) {
   const firework = new THREE.Points(particles, particleMaterial);
   scene.add(firework);
 
-  //const trailMaterial = createTrailMaterial(color);
-  // const trailTexture = createParticleTexture(color);
-  // const trailMaterial = createParticleMaterial(trailTexture);
-  // const trail = new THREE.Points(trailParticles, trailMaterial);
-  // scene.add(trail);
-
-  // let streaks = null;
-  // let streakParticles = null;
-  // let streakMaterial = null;
-  // settings below are only activated for the second firework type
   const streakPositions = initializeStreaks(
     numStreakLayers,
     particleCount,
@@ -98,7 +86,7 @@ export function createFirework(scene, color, duration) {
   let elapsed = 0;
   let tempPosArr = [];
   let streakBuffer = 0; // frame delay between particles in streaks
-
+  let flag = true;
   function update(delta) {
     elapsed += delta;
     streakBuffer++;
@@ -109,7 +97,10 @@ export function createFirework(scene, color, duration) {
       const tempPos = updateParticles(particles, delta, elapsed, duration);
       tempPosArr.push(tempPos);
       // waiting until all firework particles initialize
+      
       if (elapsed > duration * 0.2) {
+
+
         updateStreaks(
           streakParticles,
           particleCount,
@@ -118,10 +109,6 @@ export function createFirework(scene, color, duration) {
           streakMaterial
         );
       }
-      //updateTrail(trail, trailGeometry, trailPositions, elapsed, duration);
-      const positionHistory = [];
-      const historyLimit = 10;
-
     }
   }
 
@@ -155,7 +142,6 @@ export function createFirework(scene, color, duration) {
     }
   }
 
-  console.log("Firework, trail, and streaks destroyed and reset.");
 }
 
 

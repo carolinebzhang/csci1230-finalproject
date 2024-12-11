@@ -20,14 +20,13 @@ export function initializeParticles(
 
     positions.push(startX, startY, startZ); // initial positions
     velocities.push(
-      Math.sin(angle) * (speed),
+      Math.sin(angle) * speed,
       upwardSpeed,
-      0//Math.cos(theta) * (speed)
+      0 //Math.cos(theta) * (speed)
     );
   }
   return { positions, velocities };
 }
-
 
 // function to create particle texture
 export function createParticleTexture(color) {
@@ -59,7 +58,6 @@ export function createParticleTexture(color) {
   texture.needsUpdate = true;
   return texture;
 }
-
 
 // function to create particle material
 export function createParticleMaterial(texture) {
@@ -154,7 +152,8 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
       // update particle positions to move in a circle based on angle and radius
       positions[i * 3] +=
         velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 5; // horizontal motion (X-axis)
-      positions[i * 3 + 1] += velocities[i * 3 + 1] * delta * Math.sin(angle) - 9.8 * delta * 0.5; // gravity effect on Y-axis
+      positions[i * 3 + 1] +=
+        velocities[i * 3 + 1] * delta * Math.sin(angle) - 9.8 * delta * 0.5; // gravity effect on Y-axis
       //positions[i * 3 + 2] += Math.cos(angle) * radius * delta * 2; // depth motion (Z-axis)
     }
 
@@ -200,7 +199,6 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
         velocities[i * 3 + 1] * delta * Math.sin(angle) - 9.8 * delta * 0.5; // gravity effect on Y-axis
       //positions[i * 3 + 2] += Math.cos(angle) * radius * delta * 2; // depth motion (Z-axis)
     }
-
 
     // updating array keeping track of previous positions
     tempPositions.push(

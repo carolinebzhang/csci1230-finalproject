@@ -23,7 +23,7 @@ export function createStreakMaterial(texture) {
     color: 0xffffff,
     size: 1.8,
     transparent: true,
-    opacity: 0,
+    opacity: 1,
     map: texture,
     blending: THREE.AdditiveBlending,
   });
@@ -64,8 +64,10 @@ export function updateStreaks(
       streakMaterial.opacity -= Math.pow(0.005, i + 1);
     }
     if (streakMaterial.size > 0.5) {
-      streakMaterial.opacity -= Math.pow(0.0005, i + 1);
+      streakMaterial.size -= Math.pow(0.0005, i + 1);
     }
+
+    //("OPACITY", streakMaterial.opacity);
 
     streakMaterial.needsUpdate = true;
   }

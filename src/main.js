@@ -1,5 +1,3 @@
-console.log("Main.js is running");
-
 import * as THREE from "../node_modules/three/build/three.module.js";
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
@@ -26,29 +24,29 @@ let curvePoints = [
 ];
 
 let isPaused = false;
-// firework config for GUI controls
+let placementMode = false;
+let fireworkConfigs = [];
+
 let firework1Config = {
-  count: 5,
+  // firework config for GUI controls
+  count: 1,
   color: "#ff0000", // default is red
   timing: 3,
   launchFireworks: function () {
-    launchFireworks(firework1Config);
+    console.log("FIREWORKSCONFIG", fireworkConfigs)
+    if(fireworkConfigs.length > 0){
+      launchFireworks(fireworkConfigs);
+      console.log(
+        "custom"
+      )
+    }
+    else{
+    launchFireworks(fireworkConfigs);}
     animate();
   },
 };
 
-// let firework2Config = {
-//   count: 5,
-//   color: "#8300ff",
-//   timing: 3,
-//   type1bool: false,
-//   launchFireworks: function () {
-//     launchFireworks(firework2Config);
-//     animate();
-//   },
-// };
 
-//let cameraPath = new THREE.CatmullRomCurve3(curvePoints);
 let cameraPath;
 let cameraPathProgress = 0; // Camera path and progress
 let animateCameraCurve = false; // Flag to control camera curve animation
@@ -59,16 +57,12 @@ let cameraConfig = {
 };
 let composer;
 function init() {
-  console.log("Main.js is running");
-  //const composer = createBloomEffect(scene, camera, renderer);
-
-  // SET UP SCENE
-  //scene = new THREE.Scene();
-  //scene.background = new THREE.Color(0x000000);
 
   scene = new THREE.Scene();
   // set the scene's background to the dark clouds texture
   scene.background = new THREE.TextureLoader().load("PLACEHOLDER");
+  water = createTerrain(scene);
+  
 
   // set up camera
   camera = new THREE.PerspectiveCamera(
@@ -79,20 +73,13 @@ function init() {
   );
   camera.position.set(0, 50, 150);
 
-  // set up renderer
   renderer = new THREE.WebGLRenderer();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.getElementById("canvas-container").appendChild(renderer.domElement);
+  renderer.domElement.addEventListener("click", handleTerrainClick);
 
-  // set up orbit controls
   const controls = new OrbitControls(camera, renderer.domElement);
-
-  // set up water or background, rn its water but it doesnt work
-  water = createTerrain(scene);
-
-  // create lighting
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(100, 200, 100);
   directionalLight.target.position.set(0, 0, 0);
@@ -106,19 +93,12 @@ function init() {
   pointLight.position.set(50, 150, 50);
   scene.add(pointLight);
 
-  // create gui
   setupGUI();
-
-  launchFireworks(firework1Config);
-
   animate();
 }
 
 function setupGUI() {
   const gui = new dat.GUI();
-
-  // add controls to GUI
-  // first folder for scattered particle fireworks
   const firework1Folder = gui.addFolder("Firework Type 1");
   firework1Folder
     .add(firework1Config, "count", 1, 50)
@@ -133,28 +113,12 @@ function setupGUI() {
   firework1Folder
     .add(firework1Config, "launchFireworks")
     .name("Launch Fireworks");
-
-  // second folder for fireworks with streaks
-  // const firework2Folder = gui.addFolder("Firework Type 2");
-  // firework2Folder
-  //   .add(firework2Config, "count", 1, 50)
-  //   .name("Firework Count")
-  //   .step(1);
-  // firework2Folder.addColor(firework2Config, "color").name("Firework Color");
-  // firework2Folder
-  //   .add(firework2Config, "timing", 1, 10)
-  //   .name("Firework Timing")
-  //   .step(1);
-  // firework2Folder.open();
-  // firework2Folder
-  //   .add(firework2Config, "launchFireworks")
-  //   .name("Launch Fireworks");
+gui
+  .add({ placementMode: togglePlacementMode }, "placementMode")
+  .name("Placement Mode");
 
   // add pause/resume button
   gui.add({ pause: togglePause }, "pause").name("Pause/Resume");
-
-  // add save image button
-  gui.add({ save: saveSceneImage }, "save").name("Save Scene");
 
   // Add camera curve toggle
   gui
@@ -173,12 +137,6 @@ function setupGUI() {
     bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
   }
 
-  // add option to visualize the bezier curve only
-  // gui
-  //   .add({ bezier: () => createCameraPath(false) }, "bezier")
-  //   .name("Visualize Bezier Curve");
-
-  // add option to toggle camera speed
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
@@ -200,16 +158,12 @@ function createCameraPath(fullAnimation) {
   const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
   const curveLine = new THREE.Line(curveGeometry, curveMaterial);
   scene.add(curveLine); // add the curve to the scene for visualization
-  if (fullAnimation) {
-    // if the fullAnimation flag is true, then proceed with animation. Otherwise this function will just produce the
-    // visualization for the curve.
     let cameraProgress = 0;
 
     function animateCamera() {
       // update the camera position based on the progress along the curve
       camera.position.copy(cubicBezier(cameraProgress, ...curvePoints));
       camera.lookAt(new THREE.Vector3(0, 50, 0)); // needs to be adjusted
-
       // increment the progress for animation
       cameraProgress += cameraConfig.speed;
       if (cameraProgress >= 1) cameraProgress = 0; // loop the animation (ALSO could be added to GUI)
@@ -219,10 +173,9 @@ function createCameraPath(fullAnimation) {
       }
       requestAnimationFrame(animateCamera);
     }
-
     animateCamera(); // start the camera animation
   }
-}
+
 
 function toggleCameraCurve(curveStatus) {
   if (curveStatus) {
@@ -240,11 +193,9 @@ function updateCameraPosition(delta) {
       cameraPathProgress = 1;
       animateCameraCurve = false;
     }
-
     // get the camera position along the curve
     const point = cameraPath.getPointAt(cameraPathProgress);
     const lookAtPoint = cameraPath.getPointAt((cameraPathProgress + 0.01) % 1); // slightly ahead for smooth animation
-
     // update camera position and orientation
     camera.position.copy(point);
     camera.lookAt(lookAtPoint);
@@ -259,79 +210,158 @@ function togglePause() {
   }
 }
 
-function saveSceneImage() {
-  // render the scene to the canvas
-  renderer.render(scene, camera);
-  // convert canvas to image data
-  const imageDataURL = renderer.domElement.toDataURL("image/png");
-
-  // create a temporary download link
-
-  const fileName =
-    prompt(
-      "Enter a file name for the image (default: 'scene.png'):",
-      "scene.png"
-    ) || "scene.png";
-
-  const link = document.createElement("a");
-  link.href = imageDataURL;
-  link.download = fileName;
-
-  // trigger the download
-  link.click();
-}
-
 function launchFireworks(config) {
   // clear setting
   if (fireworks && Array.isArray(fireworks)) {
+    console.log("first one");
     fireworks.forEach((firework) => {
       if (firework && firework.destroy) {
-        firework.destroy(scene); // Call destroy method to clean up
+        firework.destroy(scene); 
       }
     });
   }
-
-  //resetFireworkState();
   fireworks = [];
-
   // create fireworks based on config
-  for (let i = 0; i < config.count; i++) {
-    const firework = createFirework(scene, config.color, config.timing);
+
+  for (let i = 0; i < config.length; i++) {
+    const firework = createFirework(scene, config[i].color, config[i].timing, config[i].position);
+    console.log(config[i].color, config[i].timing, config[i].position);
+    console.log("created firework");
     fireworks.push(firework);
   }
-  // for (let i = 0; i < config.count2; i++) {
-  //   const firework2 = createFirework(
-  //     scene,
-  //     config.color2,
-  //     config.timing2,
-  //     false
-  //   );
-  //   fireworks.push(firework2);
-  // }
-  console.log("IN FIREWORKS");
-  console.log(fireworks);
+}
+
+function addFirework(config, position = { x: 0, y: 0, z: 0 }) {
+  const fireworkConfig = {
+    type: config.type,
+    color: config.color,
+    timing: config.timing,
+    position: position,
+  };
+  fireworkConfigs.push(fireworkConfig);
+  (`Added firework:`, fireworkConfig);
+}
+function showPopUpMenu(x, y, position) {
+  //console.log("IN SHOW POPUP MENU");
+
+  // Create the popup menu container
+  let popUpMenu = document.createElement("div");
+  popUpMenu.style.position = "absolute";
+  popUpMenu.style.left = `${x}px`;
+  popUpMenu.style.top = `${y}px`;
+  popUpMenu.style.backgroundColor = "white";
+  popUpMenu.style.border = "1px solid black";
+  popUpMenu.style.padding = "10px";
+  popUpMenu.style.zIndex = 1000;
+
+  // Label and select for type
+  const typeLabel = document.createElement("label");
+  typeLabel.textContent = "Type: ";
+  const typeSelect = document.createElement("select");
+  ["flower", "petal", "pine"].forEach((type) => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    typeSelect.appendChild(option);
+  });
+  typeLabel.appendChild(typeSelect);
+  popUpMenu.appendChild(typeLabel);
+  popUpMenu.appendChild(document.createElement("br"));
+
+  // Label and input for color
+  const colorLabel = document.createElement("label");
+  colorLabel.textContent = "Color: ";
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.value = "#ff0000";
+  colorLabel.appendChild(colorInput);
+  popUpMenu.appendChild(colorLabel);
+  popUpMenu.appendChild(document.createElement("br"));
+
+  // Label and input for speed
+  const speedLabel = document.createElement("label");
+  speedLabel.textContent = "Speed: ";
+  const speedInput = document.createElement("input");
+  speedInput.type = "number";
+  speedInput.min = 1;
+  speedInput.max = 10;
+  speedInput.value = 3;
+  speedLabel.appendChild(speedInput);
+  popUpMenu.appendChild(speedLabel);
+  popUpMenu.appendChild(document.createElement("br"));
+
+  // Confirm button
+  const confirmButton = document.createElement("button");
+  confirmButton.textContent = "Add Firework";
+  confirmButton.onclick = () => {
+    addFirework(
+      {
+        //type: typeSelect.value,
+        color: colorInput.value,
+        timing: parseFloat(speedInput.value)
+      },
+      position
+    );
+
+    // Draw an "X" on the surface at the specified position
+    const canvas = document.querySelector("canvas-container");
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(position.x - 5, position.y - 5);
+        ctx.lineTo(position.x + 5, position.y + 5);
+        ctx.moveTo(position.x + 5, position.y - 5);
+        ctx.lineTo(position.x - 5, position.y + 5);
+        ctx.stroke();
+      }
+    }
+
+    popUpMenu.remove();
+    popUpMenu = null;
+  };
+  popUpMenu.appendChild(confirmButton);
+
+  document.body.appendChild(popUpMenu);
+}
+
+
+function togglePlacementMode() {
+  placementMode = !placementMode;
+  console.log(`Placement mode: ${placementMode}`);
+
+}
+
+function handleTerrainClick(event) {
+  if (!placementMode) return;
+  //console.log("HANDLE TERRAIN CLICK");
+  const mouse = new THREE.Vector2();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects([water]); // Assuming terrain is in "water"
+  if (intersects.length > 0) {
+    const point = intersects[0].point;
+    //console.log(point);
+    showPopUpMenu(event.clientX, event.clientY, point);
+  }
 }
 
 function animate() {
   if (isPaused) return;
 
   requestAnimationFrame(animate);
-
   const delta = clock.getDelta();
-
-  // update fireworks
   fireworks.forEach((firework) => firework.update(delta));
-
-  // update camera position if curve animation is active
   updateCameraPosition(delta);
 
-  // render the scene
-  //renderer.render(scene, camera);
-  // initialize composer only once
   if (!composer) {
     composer = createBloomEffect(scene, camera, renderer);
   }
-
   composer.render();
 }
 
