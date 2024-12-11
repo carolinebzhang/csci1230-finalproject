@@ -1,9 +1,10 @@
-# CSCI1230 Final Project
+# CSCI1230 Final Project: Firework!
 
 ### Team Members
 Caroline Zhang (czhan157) \
 Amber Dong (ydong34)
 
+![Example rendering](example_images/example_3.jpg)
 
 ## Project Overview
 For our final project, we created a fireworks simulation using Three.js. Users can customize fireworks, selecting from different colors, firework types, explosion speeds, and the fireworks launch sequence. They can also choose between viewing the fireworks using orbital controls, or using our GUI to create a custom Bezier Curve camera path.
