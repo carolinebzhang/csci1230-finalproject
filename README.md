@@ -62,14 +62,14 @@ npx vite build
 
 ## Code Structure
 
-**src/utils/fireworktrails.js** contains the logic for initializing and updating the firework streaks, as well as creating their texture and material. \
+**src/utils/fireworktrails.js** contains the logic for initializing and updating the firework streaks, as well as creating their texture and material. 
 
-**src/utiles/fireworkparticles** contains the logic for initializing and updating the firework particles,as well as creating their texture and material. \
+**src/utiles/fireworkparticles** contains the logic for initializing and updating the firework particles,as well as creating their texture and material. 
 
-**src/utils/visualeffects** contains the logic for applying bloom to the scene. \ 
+**src/utils/visualeffects** contains the logic for applying bloom to the scene. 
 
-**src/fireworks.js** contains the logic for creating a single firework.  \ 
+**src/fireworks.js** contains the logic for creating a single firework.  
 
-**src/terrain.js** loads in a texture file used for the terrain of our scene. \ 
+**src/terrain.js** loads in a texture file used for the terrain of our scene.
 
 **src/main.js** contains the logic for rendering and animating the whole scene, the GUI, camera trajectories, and making calls to createFirework. 
