@@ -2,32 +2,30 @@ import * as THREE from "../node_modules/three/build/three.module.js";
 import { Water } from "../node_modules/three/examples/jsm/objects/Water.js";
 
 export function createTerrain(scene, camera, renderer) {
-  const geometry = new THREE.PlaneGeometry(1000, 1000);
-  const material = new THREE.MeshBasicMaterial({
-    color: "gray",
+  // Load textures for the terrain
+  const textureLoader = new THREE.TextureLoader();
+
+  const normalMap = textureLoader.load("textures/normal.jpg"); // Replace with your normal map path
+  const roughnessMap = textureLoader.load("textures/bump.jpg"); // Replace with your roughness map path
+
+  // Create the geometry
+  const geometry = new THREE.PlaneGeometry(1000, 1000, 256, 256); // Add more segments for bumps
+
+  // Create the material with reduced reflectivity
+  const material = new THREE.MeshStandardMaterial({
+    color: "#222222", // Base color
+    roughness: 0.8, // Increase roughness to make it less reflective
+    metalness: 0.0, // Decrease metalness to reduce reflectivity
+    normalMap: normalMap, // Add bumps using the normal map
+    roughnessMap: roughnessMap, // Control reflectiveness with roughness map
   });
+
+  // Create the mesh
   const plane = new THREE.Mesh(geometry, material);
   plane.rotation.x = -Math.PI / 2;
+  plane.receiveShadow = true; // Allow the plane to receive shadows
+
   scene.add(plane);
-
-  // const water = new Water(waterGeometry, {
-  //   color: 0x001e0f,
-  //   scale: 1,
-  //   flowDirection: new THREE.Vector2(1, 1),
-  //   textureWidth: 1024,
-  //   textureHeight: 1024,
-  // });
-  // water.rotation.x = -Math.PI / 2;
-
-  // water.position.y = 0;
-  //scene.add(water);
-
-  const light = new THREE.DirectionalLight(0xffffff, 1.0);
-  light.position.set(100, 100, 100).normalize();
-  //scene.add(light);
-
-  const ambientLight = new THREE.AmbientLight(0x404040, 1);
-  //scene.add(ambientLight);
 
   return plane;
 }

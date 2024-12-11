@@ -13,19 +13,21 @@ let scene,
   renderer,
   fireworks = [];
 
+
 let clock = new THREE.Clock();
 
+let placementMode = true;
 // define control points for the Bezier curve
 let curvePoints = [
   new THREE.Vector3(0, 50, 50),
-  new THREE.Vector3(50, 100, 50),
+  new THREE.Vector3(150, 100, -50),
   new THREE.Vector3(0, 50, 0),
-  new THREE.Vector3(-50, 100, -50),
+  new THREE.Vector3(-150, 100, -50),
 ];
 
 let fireworkConfigs = [];
 let crossMarker;
-
+let terrain;
 let isPaused = false;
 let composer;
 let cameraPath;
@@ -35,12 +37,17 @@ let cameraConfig = {
   curveStatus: false,
   speed: 0.005,
 };
-
+let mainScene;
 function init() {
   scene = new THREE.Scene();
-  scene.background = new THREE.TextureLoader().load("PLACEHOLDER");
-  water = createTerrain(scene);
-  
+  const textureLoader = new THREE.TextureLoader();
+  const nightSkyTexture = textureLoader.load("../textures/night_sky.jpg"); 
+
+  scene.background = new THREE.Color(0x000000); 
+
+
+
+  terrain = createTerrain(scene);
   // set up camera
   camera = new THREE.PerspectiveCamera(
     75,
@@ -57,7 +64,7 @@ function init() {
   renderer.domElement.addEventListener("click", handleTerrainClick);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
   directionalLight.position.set(100, 200, 100);
   directionalLight.target.position.set(0, 0, 0);
 
@@ -98,18 +105,29 @@ function setupGUI() {
   const bezierFolder = gui.addFolder("Adjust Camera Curve");
   for (let i = 0; i < 4; i++) {
     const bezierPointFolder = bezierFolder.addFolder("Bezier Point " + (i + 1));
-    bezierPointFolder.add(curvePoints[i], "x", -100, 100).name("X").step(1);
-    bezierPointFolder.add(curvePoints[i], "y", -100, 100).name("Y").step(1);
-    bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
+    bezierPointFolder.add(curvePoints[i], "x", -200, 200).name("X").step(1);
+    bezierPointFolder.add(curvePoints[i], "y", -200, 200).name("Y").step(1);
+    bezierPointFolder.add(curvePoints[i], "z", -200, 200).name("Z").step(1);
   }
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
+
+  gui
+    .add({ togglePlacementMode: togglePlacementMode }, "togglePlacementMode")
+    .name(() => `Placement Mode: ${placementMode ? "ON" : "OFF"}`); 
 
   gui
     .add({ clearFireworks: clearFireworks }, "clearFireworks")
     .name("Clear Fireworks");
 }
 
+function togglePlacementMode() {
+  placementMode = !placementMode; 
+  console.log(`Placement Mode: ${placementMode ? "ON" : "OFF"}`); 
+  setupGUI(); 
+}
+
 function createCameraPath() {
+
   // visualize the Bézier curve by generating points along it
   const curvePointsArray = [];
   const numPoints = 100; // number of points to sample the curve
@@ -144,10 +162,11 @@ function createCameraPath() {
   }
 
 
+
 function toggleCameraCurve(curveStatus) {
   if (curveStatus) {
     cameraPathProgress = 0;
-    createCameraPath();
+    //createCameraPath();
   }
 }
 
@@ -190,9 +209,22 @@ function launchFireworks(config) {
   // create fireworks based on config
 
   for (let i = 0; i < config.length; i++) {
-    const firework = createFirework(scene, config[i].type, config[i].color, config[i].timing, config[i].position);
-    fireworks.push(firework);
+    setTimeout(() => {
+      const firework = createFirework(
+        scene,
+        config[i].type,
+        config[i].color,
+        config[i].timing,
+        config[i].position
+      );
+
+      fireworks.push(firework);
+    }, config[i].delay * 1000);
   }
+  if (cameraConfig.curveStatus) {
+    createCameraPath();
+  }
+  
 }
 
 function addFirework(config, position = { x: 0, y: 0, z: 0 }) {
@@ -201,6 +233,7 @@ function addFirework(config, position = { x: 0, y: 0, z: 0 }) {
     color: config.color,
     timing: config.timing,
     position: position,
+    delay: config.delay,
   };
   fireworkConfigs.push(fireworkConfig);
   (`Added firework:`, fireworkConfig);
@@ -253,6 +286,31 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.appendChild(speedLabel);
   popUpMenu.appendChild(document.createElement("br"));
 
+  const delayLabel = document.createElement("label");
+  delayLabel.textContent = "Launch Delay: ";
+  const delayInput = document.createElement("input");
+delayInput.type = "range";
+delayInput.min = 0;
+delayInput.max = 60;
+delayInput.value = 0; // default to 0 seconds
+delayInput.step = 1; // optional: adjust step size to control precision
+delayLabel.appendChild(delayInput);
+
+// show selected value
+const delayValueDisplay = document.createElement("span");
+delayValueDisplay.textContent = ` (${delayInput.value}s)`; // initial display
+delayLabel.appendChild(delayValueDisplay);
+
+popUpMenu.appendChild(delayLabel);
+popUpMenu.appendChild(document.createElement("br"));
+
+// update display when slider value changes
+delayInput.addEventListener("input", () => {
+  delayValueDisplay.textContent = ` (${delayInput.value}s)`; // update displayed value
+
+});
+
+
   // confirm button
   const confirmButton = document.createElement("button");
   confirmButton.textContent = "Add Firework";
@@ -262,6 +320,7 @@ function showPopUpMenu(x, y, position) {
         type: typeSelect.value,
         color: colorInput.value,
         timing: parseFloat(speedInput.value),
+        delay: parseFloat(delayInput.value),
       },
       position
     );
@@ -280,6 +339,15 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.appendChild(confirmButton);
 
   document.body.appendChild(popUpMenu);
+
+  const quitButton = document.createElement("button");
+  quitButton.textContent = "Quit";
+  quitButton.style.marginLeft = "10px"; // optional: add spacing between buttons
+  quitButton.onclick = () => {
+    popUpMenu.remove(); // remove the popup menu from the DOM
+    popUpMenu = null; // clean up reference
+  };
+  popUpMenu.appendChild(quitButton);
 }
 
 function handleTerrainClick(event) {
@@ -290,7 +358,7 @@ function handleTerrainClick(event) {
   const raycaster = new THREE.Raycaster();
   raycaster.setFromCamera(mouse, camera);
 
-  const intersects = raycaster.intersectObjects([water]); 
+  const intersects = raycaster.intersectObjects([terrain]); 
   if (intersects.length > 0) {
     const point = intersects[0].point;
     showPopUpMenu(event.clientX, event.clientY, point);
@@ -308,14 +376,13 @@ function animate() {
   if (!composer) {
     composer = createBloomEffect(scene, camera, renderer);
   }
+  
   composer.render();
 }
 
 function clearFireworks() {
   // Clear the fireworkConfigs array
   fireworkConfigs = [];
-
-  // Remove all objects from the scene except essential ones
   for (let i = scene.children.length - 1; i >= 0; i--) {
     const obj = scene.children[i];
     // Retain lights, camera, water, and terrain
@@ -323,14 +390,13 @@ function clearFireworks() {
       !(
         obj.isLight ||
         obj === camera ||
-        obj === water ||
+        obj === terrain ||
         obj.userData.isTerrain
       )
     ) {
       scene.remove(obj);
     }
   }
-
   // Clear fireworks array
   fireworks = [];
 }

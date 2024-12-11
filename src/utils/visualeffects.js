@@ -20,6 +20,7 @@ export function createBloomEffect(scene, camera, renderer) {
     1.2,  // bloom radius (spread)
     0.55  // bloom threshold (minimum brightness for bloom)
   );
+
   composer.addPass(bloomPass);
 
   return composer;
