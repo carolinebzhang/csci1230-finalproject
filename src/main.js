@@ -23,47 +23,24 @@ let curvePoints = [
   new THREE.Vector3(-50, 100, -50),
 ];
 
-let isPaused = false;
-let placementMode = false;
 let fireworkConfigs = [];
+let crossMarker;
 
-let firework1Config = {
-  // firework config for GUI controls
-  count: 1,
-  color: "#ff0000", // default is red
-  timing: 3,
-  launchFireworks: function () {
-    console.log("FIREWORKSCONFIG", fireworkConfigs)
-    if(fireworkConfigs.length > 0){
-      launchFireworks(fireworkConfigs);
-      console.log(
-        "custom"
-      )
-    }
-    else{
-    launchFireworks(fireworkConfigs);}
-    animate();
-  },
-};
-
-
+let isPaused = false;
+let composer;
 let cameraPath;
-let cameraPathProgress = 0; // Camera path and progress
-let animateCameraCurve = false; // Flag to control camera curve animation
-// for GUI adjustments
+let cameraPathProgress = 0; 
+let animateCameraCurve = false; // flag to control camera curve animation
 let cameraConfig = {
   curveStatus: false,
   speed: 0.005,
 };
-let composer;
-function init() {
 
+function init() {
   scene = new THREE.Scene();
-  // set the scene's background to the dark clouds texture
   scene.background = new THREE.TextureLoader().load("PLACEHOLDER");
   water = createTerrain(scene);
   
-
   // set up camera
   camera = new THREE.PerspectiveCamera(
     75,
@@ -97,38 +74,27 @@ function init() {
   animate();
 }
 
+let showFireworks = {
+  // firework config for GUI controls
+  launchFireworks: function () {
+    scene.remove(crossMarker);
+    launchFireworks(fireworkConfigs);
+    animate();
+  },
+};
+
 function setupGUI() {
   const gui = new dat.GUI();
-  const firework1Folder = gui.addFolder("Firework Type 1");
-  firework1Folder
-    .add(firework1Config, "count", 1, 50)
-    .name("Firework Count")
-    .step(1);
-  firework1Folder.addColor(firework1Config, "color").name("Firework Color");
-  firework1Folder
-    .add(firework1Config, "timing", 1, 10)
-    .name("Firework Timing")
-    .step(1);
-  firework1Folder.open();
-  firework1Folder
-    .add(firework1Config, "launchFireworks")
-    .name("Launch Fireworks");
-gui
-  .add({ placementMode: togglePlacementMode }, "placementMode")
-  .name("Placement Mode");
 
-  // add pause/resume button
+  gui.add(showFireworks, "launchFireworks").name("Launch Fireworks");
   gui.add({ pause: togglePause }, "pause").name("Pause/Resume");
-
-  // Add camera curve toggle
   gui
     .add(cameraConfig, "curveStatus")
     .name("Camera Curve Status")
     .onChange(function (value) {
       toggleCameraCurve(value);
     });
-
-  // allows user to adjust bezier curve
+  // allow user to control bezier curves
   const bezierFolder = gui.addFolder("Adjust Camera Curve");
   for (let i = 0; i < 4; i++) {
     const bezierPointFolder = bezierFolder.addFolder("Bezier Point " + (i + 1));
@@ -136,11 +102,10 @@ gui
     bezierPointFolder.add(curvePoints[i], "y", -100, 100).name("Y").step(1);
     bezierPointFolder.add(curvePoints[i], "z", -100, 100).name("Z").step(1);
   }
-
   gui.add(cameraConfig, "speed", 0, 0.01).name("Camera Speed").step(0.001);
 }
 
-function createCameraPath(fullAnimation) {
+function createCameraPath() {
   // visualize the Bézier curve by generating points along it
   const curvePointsArray = [];
   const numPoints = 100; // number of points to sample the curve
@@ -180,7 +145,7 @@ function createCameraPath(fullAnimation) {
 function toggleCameraCurve(curveStatus) {
   if (curveStatus) {
     cameraPathProgress = 0;
-    createCameraPath(true);
+    createCameraPath();
   }
 }
 
@@ -213,7 +178,6 @@ function togglePause() {
 function launchFireworks(config) {
   // clear setting
   if (fireworks && Array.isArray(fireworks)) {
-    console.log("first one");
     fireworks.forEach((firework) => {
       if (firework && firework.destroy) {
         firework.destroy(scene); 
@@ -224,9 +188,7 @@ function launchFireworks(config) {
   // create fireworks based on config
 
   for (let i = 0; i < config.length; i++) {
-    const firework = createFirework(scene, config[i].color, config[i].timing, config[i].position);
-    console.log(config[i].color, config[i].timing, config[i].position);
-    console.log("created firework");
+    const firework = createFirework(scene, config[i].type, config[i].color, config[i].timing, config[i].position);
     fireworks.push(firework);
   }
 }
@@ -242,9 +204,8 @@ function addFirework(config, position = { x: 0, y: 0, z: 0 }) {
   (`Added firework:`, fireworkConfig);
 }
 function showPopUpMenu(x, y, position) {
-  //console.log("IN SHOW POPUP MENU");
 
-  // Create the popup menu container
+  // create the popup menu container
   let popUpMenu = document.createElement("div");
   popUpMenu.style.position = "absolute";
   popUpMenu.style.left = `${x}px`;
@@ -254,11 +215,11 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.style.padding = "10px";
   popUpMenu.style.zIndex = 1000;
 
-  // Label and select for type
+  // label and select for type
   const typeLabel = document.createElement("label");
   typeLabel.textContent = "Type: ";
   const typeSelect = document.createElement("select");
-  ["flower", "petal", "pine"].forEach((type) => {
+  ["default", "boom", "flower", "megaphone", "windy", "vase"].forEach((type) => {
     const option = document.createElement("option");
     option.value = type;
     option.textContent = type;
@@ -268,7 +229,7 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.appendChild(typeLabel);
   popUpMenu.appendChild(document.createElement("br"));
 
-  // Label and input for color
+  // label and input for color
   const colorLabel = document.createElement("label");
   colorLabel.textContent = "Color: ";
   const colorInput = document.createElement("input");
@@ -278,7 +239,7 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.appendChild(colorLabel);
   popUpMenu.appendChild(document.createElement("br"));
 
-  // Label and input for speed
+  // label and input for speed
   const speedLabel = document.createElement("label");
   speedLabel.textContent = "Speed: ";
   const speedInput = document.createElement("input");
@@ -290,33 +251,26 @@ function showPopUpMenu(x, y, position) {
   popUpMenu.appendChild(speedLabel);
   popUpMenu.appendChild(document.createElement("br"));
 
-  // Confirm button
+  // confirm button
   const confirmButton = document.createElement("button");
   confirmButton.textContent = "Add Firework";
   confirmButton.onclick = () => {
     addFirework(
       {
-        //type: typeSelect.value,
+        type: typeSelect.value,
         color: colorInput.value,
-        timing: parseFloat(speedInput.value)
+        timing: parseFloat(speedInput.value),
       },
       position
     );
 
-    // Draw an "X" on the surface at the specified position
-    const canvas = document.querySelector("canvas-container");
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.strokeStyle = "black";
-        ctx.beginPath();
-        ctx.moveTo(position.x - 5, position.y - 5);
-        ctx.lineTo(position.x + 5, position.y + 5);
-        ctx.moveTo(position.x + 5, position.y - 5);
-        ctx.lineTo(position.x - 5, position.y + 5);
-        ctx.stroke();
-      }
-    }
+    const radius = 1;
+    const segments = 32; 
+    const circleGeometry = new THREE.CircleGeometry(radius, segments);
+    const material = new THREE.LineBasicMaterial({ color: 0x0000ff }); 
+    const circleMarker = new THREE.LineLoop(circleGeometry, material);
+    circleMarker.position.set(position.x, position.y, position.z);
+    scene.add(circleMarker);
 
     popUpMenu.remove();
     popUpMenu = null;
@@ -326,16 +280,7 @@ function showPopUpMenu(x, y, position) {
   document.body.appendChild(popUpMenu);
 }
 
-
-function togglePlacementMode() {
-  placementMode = !placementMode;
-  console.log(`Placement mode: ${placementMode}`);
-
-}
-
 function handleTerrainClick(event) {
-  if (!placementMode) return;
-  //console.log("HANDLE TERRAIN CLICK");
   const mouse = new THREE.Vector2();
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -343,10 +288,9 @@ function handleTerrainClick(event) {
   const raycaster = new THREE.Raycaster();
   raycaster.setFromCamera(mouse, camera);
 
-  const intersects = raycaster.intersectObjects([water]); // Assuming terrain is in "water"
+  const intersects = raycaster.intersectObjects([water]); 
   if (intersects.length > 0) {
     const point = intersects[0].point;
-    //console.log(point);
     showPopUpMenu(event.clientX, event.clientY, point);
   }
 }

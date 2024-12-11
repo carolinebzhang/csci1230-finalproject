@@ -1,8 +1,7 @@
 import * as THREE from "three";
-import { hexToRGB } from "./utils.js";
 import { mod } from "three/webgpu";
 
-export function initializeParticles(
+export function initializeFlower(
   particleCount,
   startX,
   startY,
@@ -12,67 +11,23 @@ export function initializeParticles(
   const positions = [];
   const velocities = [];
   for (let i = 0; i < particleCount; i++) {
-    const theta =
-      ((360 / particleCount) * (360 / particleCount) * Math.PI) / 180;
+    const theta = ((360 / particleCount) * Math.PI) / 180;
     const angle = ((360 / particleCount) * Math.PI) / 180; // random horizontal angle
     const speed = 0.5 * maxSpeed;
     const upwardSpeed = 0.3 * maxSpeed + 0.3 * maxSpeed; // strong upward motion
 
     positions.push(startX, startY, startZ); // initial positions
     velocities.push(
-      Math.sin(angle) * speed,
+      Math.cos(angle) * (speed * 0.5),
       upwardSpeed,
-      0 //Math.cos(theta) * (speed)
+      Math.sin(angle) * (speed * 0.5)
     );
   }
   return { positions, velocities };
 }
 
-// function to create particle texture
-export function createParticleTexture(color) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  const size = 64;
-
-  canvas.width = size;
-  canvas.height = size;
-
-  const gradient = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    size / 32,
-    size / 2,
-    size / 2,
-    size / 2
-  );
-
-  const { r, g, b } = hexToRGB(color);
-  gradient.addColorStop(0, "white");
-  gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.5)`);
-  gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-// function to create particle material
-export function createParticleMaterial(texture) {
-  return new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 2,
-    transparent: true,
-    opacity: 1,
-    map: texture,
-    blending: THREE.AdditiveBlending,
-  });
-}
-
 // function to update particles' position and velocity
-export function updateParticles(particles, delta, elapsed, lifetime) {
+export function updateFlower(particles, delta, elapsed, lifetime) {
   // creating tails
   const positions = particles.attributes.position.array;
   const velocities = particles.attributes.velocity.array;
@@ -152,10 +107,9 @@ export function updateParticles(particles, delta, elapsed, lifetime) {
 
       // update particle positions to move in a circle based on angle and radius
       positions[i * 3] +=
-        velocities[i * 3 + 0] * 0.4 + Math.cos(angle) * radius * delta * 2; // horizontal motion (X-axis)
-      positions[i * 3 + 1] +=
-        velocities[i * 3 + 1] * delta * Math.sin(angle) - 9.8 * delta; // gravity effect on Y-axis
-      positions[i * 3 + 2]; //+= Math.cos(angle) * radius * delta * 2; // depth motion (Z-axis)
+        velocities[i * 3 + 0] * 0.01 + Math.cos(angle) * radius * delta * 2; // horizontal motion (X-axis)
+      positions[i * 3 + 1] += velocities[i * 3 + 1] * delta - 9.8 * delta; // gravity effect on Y-axis
+      positions[i * 3 + 2] += Math.sin(angle) * radius * delta * 2; // depth motion (Z-axis)
     }
 
     // updating array keeping track of previous positions
